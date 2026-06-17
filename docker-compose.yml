@@ -1,0 +1,308 @@
+
+version: '3.9'
+
+# ========================================
+# 古代临冲吕公车结构仿真与稳定性分析系统
+# Docker Compose 编排文件 v2.0
+# ========================================
+
+networks:
+  siege-tower-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  clickhouse-data:
+    driver: local
+  clickhouse-logs:
+    driver: local
+  mosquitto-data:
+    driver: local
+  mosquitto-logs:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+services:
+
+  # ========================================
+  # 1. ClickHouse 时序数据库
+  # 存储传感器数据、FEM分析结果、告警事件
+  # ========================================
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3-alpine
+    container_name: siege-tower-clickhouse
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-siege_tower}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-tower_user}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-tower_secure_2024}
+      TZ: ${TZ:-Asia/Shanghai}
+    ports:
+      - "${CLICKHOUSE_PORT:-8123}:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - clickhouse-logs:/var/log/clickhouse-server
+      - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./clickhouse/rollup_ttl.sql:/docker-entrypoint-initdb.d/02-rollup.sql:ro
+      - ./clickhouse/config.d/:/etc/clickhouse-server/config.d/:ro
+    networks:
+      siege-tower-net:
+        ipv4_address: 172.28.1.10
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    mem_limit: 4g
+    cpus: '2.0'
+
+  # ========================================
+  # 2. Eclipse Mosquitto MQTT Broker
+  # 告警推送、传感器数据上报
+  # ========================================
+  mqtt:
+    image: eclipse-mosquitto:2.0.18-openssl
+    container_name: siege-tower-mqtt
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+    ports:
+      - "${MQTT_PORT:-1883}:1883"
+      - "9001:9001"
+    volumes:
+      - ./mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-logs:/mosquitto/log
+    networks:
+      siege-tower-net:
+        ipv4_address: 172.28.1.20
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -t '$$SYS/broker/uptime' -C 1 -W 3 -h localhost -p 1883 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    mem_limit: 512m
+    cpus: '0.5'
+
+  # ========================================
+  # 3. Rust 后端服务
+  # DTU接收、FEM分析、土壤分析、告警评估
+  # ========================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: siege-tower-backend
+    restart: unless-stopped
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      mqtt:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      RUST_LOG: ${RUST_LOG:-info,siege_tower_backend=debug,tower_http=info}
+      RUST_BACKTRACE: "1"
+
+      SERVER_HOST: "0.0.0.0"
+      SERVER_PORT: "8080"
+
+      CLICKHOUSE_URL: "http://clickhouse:8123"
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-siege_tower}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-tower_user}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-tower_secure_2024}
+
+      MQTT_BROKER: "mqtt"
+      MQTT_PORT: "1883"
+      MQTT_CLIENT_ID: "siege_tower_backend"
+      MQTT_ALERT_TOPIC: ${MQTT_ALERT_TOPIC:-siege_tower/alert}
+      MQTT_SENSOR_TOPIC: ${MQTT_SENSOR_TOPIC:-siege_tower/sensor}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+      - "9090:8080"
+    volumes:
+      - ./backend/config/:/app/config/:ro
+      - ./logs/backend/:/app/logs/:rw
+    networks:
+      siege-tower-net:
+        ipv4_address: 172.28.1.30
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    mem_limit: 6g
+    cpus: '4.0'
+
+  # ========================================
+  # 4. Frontend (Nginx + Vite 构建产物)
+  # 攻城塔3D可视化 + 稳定性监控面板
+  # ========================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: siege-tower-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    networks:
+      siege-tower-net:
+        ipv4_address: 172.28.1.40
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    mem_limit: 512m
+    cpus: '0.5'
+
+  # ========================================
+  # 5. 传感器模拟器 (Python)
+  # 模拟DTU传感器上报：风荷载+土壤条件可配置
+  # ========================================
+  simulator:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    container_name: siege-tower-simulator
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+      mqtt:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+
+      SIM_MODE: ${SIM_MODE:-hybrid}
+      SIM_INTERVAL_SEC: ${SIM_INTERVAL_SEC:-5}
+      SIM_TOWER_ID: ${SIM_TOWER_ID:-1}
+      SIM_TOWER_NAME: ${SIM_TOWER_NAME:-临冲吕公车-一号}
+
+      WIND_PROFILE: ${WIND_PROFILE:-gusty}
+      WIND_BASE_MPS: ${WIND_BASE_MPS:-10.0}
+      WIND_MAX_MPS: ${WIND_MAX_MPS:-40.0}
+      WIND_GUST_FACTOR: ${WIND_GUST_FACTOR:-2.5}
+      WIND_CHANGE_INTERVAL: ${WIND_CHANGE_INTERVAL:-120}
+      WIND_DIRECTION: ${WIND_DIRECTION:-random}
+
+      SOIL_TYPE: ${SOIL_TYPE:-sand}
+      SOIL_MOISTURE_PCT: ${SOIL_MOISTURE_PCT:-15.0}
+      SOIL_SETTLEMENT_MM: ${SOIL_SETTLEMENT_MM:-0.0}
+      SOIL_DYNAMIC: ${SOIL_DYNAMIC:-true}
+
+      STRESS_BASE_MPA: ${STRESS_BASE_MPA:-25.0}
+      TILT_BASE_DEG: ${TILT_BASE_DEG:-0.5}
+      TEMP_BASE_C: ${TEMP_BASE_C:-20.0}
+      HUMIDITY_BASE_PCT: ${HUMIDITY_BASE_PCT:-50.0}
+
+      INJECT_FAULTS: ${INJECT_FAULTS:-true}
+      FAULT_PROBABILITY: ${FAULT_PROBABILITY:-0.02}
+
+      API_BASE_URL: "http://backend:8080"
+      MQTT_BROKER: "mqtt"
+      MQTT_PORT: "1883"
+      MQTT_SENSOR_TOPIC: ${MQTT_SENSOR_TOPIC:-siege_tower/sensor}
+
+      OUTPUT_MODE: ${OUTPUT_MODE:-both}
+    volumes:
+      - ./logs/simulator/:/app/logs/:rw
+    networks:
+      siege-tower-net:
+        ipv4_address: 172.28.1.50
+    mem_limit: 512m
+    cpus: '0.5'
+
+  # ========================================
+  # 6. Prometheus 指标采集
+  # ========================================
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: siege-tower-prometheus
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - "${PROM_PORT:-9090}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      siege-tower-net:
+        ipv4_address: 172.28.1.60
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    mem_limit: 1g
+    cpus: '1.0'
+
+  # ========================================
+  # 7. Grafana 可视化面板 (可选)
+  # ========================================
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: siege-tower-grafana
+    restart: unless-stopped
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
+      GF_INSTALL_PLUGINS: "grafana-clickhouse-datasource"
+      TZ: ${TZ:-Asia/Shanghai}
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards/:/var/lib/grafana/dashboards/:ro
+      - ./grafana/provisioning/:/etc/grafana/provisioning/:ro
+    networks:
+      siege-tower-net:
+        ipv4_address: 172.28.1.70
+    profiles:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    mem_limit: 1g
+    cpus: '1.0'

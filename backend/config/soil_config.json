@@ -1,0 +1,166 @@
+{
+  "soil_types": [
+    {
+      "type": "sand",
+      "name_cn": "砂土",
+      "description": "颗粒均匀、透水性强、抗剪强度高但易液化",
+      "bearing_capacity_ref_kpa": 180.0,
+      "friction_coefficient": 0.45,
+      "compressibility_index": 0.02,
+      "terzaghi_params": {
+        "c_ref_kpa": 2.0,
+        "phi_ref_deg": 34.0,
+        "gamma_sat_knm3": 19.0,
+        "gamma_dry_knm3": 16.5,
+        "w_opt_pct": 10.0,
+        "w_sat_pct": 28.0,
+        "k_c": 0.015,
+        "k_phi": 0.01
+      },
+      "settlement_params": {
+        "initial_void_ratio": 0.55,
+        "compression_index": 0.08,
+        "recompression_index": 0.015,
+        "coefficient_of_consolidation_cm2s": 0.005,
+        "secondary_compression_index": 0.001,
+        "layer_thickness_m": 3.0
+      },
+      "operational": {
+        "minimum_bearing_kpa": 120.0,
+        "max_settlement_mm": 50.0,
+        "max_differential_settlement_mm": 25.0
+      }
+    },
+    {
+      "type": "silt",
+      "name_cn": "粉土",
+      "description": "粒径0.002-0.075mm，遇水易软化，承载力中等",
+      "bearing_capacity_ref_kpa": 90.0,
+      "friction_coefficient": 0.30,
+      "compressibility_index": 0.20,
+      "terzaghi_params": {
+        "c_ref_kpa": 18.0,
+        "phi_ref_deg": 25.0,
+        "gamma_sat_knm3": 18.5,
+        "gamma_dry_knm3": 15.0,
+        "w_opt_pct": 18.0,
+        "w_sat_pct": 38.0,
+        "k_c": 0.035,
+        "k_phi": 0.025
+      },
+      "settlement_params": {
+        "initial_void_ratio": 0.75,
+        "compression_index": 0.25,
+        "recompression_index": 0.05,
+        "coefficient_of_consolidation_cm2s": 0.001,
+        "secondary_compression_index": 0.005,
+        "layer_thickness_m": 4.0
+      },
+      "operational": {
+        "minimum_bearing_kpa": 70.0,
+        "max_settlement_mm": 100.0,
+        "max_differential_settlement_mm": 40.0
+      }
+    },
+    {
+      "type": "loam",
+      "name_cn": "壤土",
+      "description": "砂粉黏混合物，农业沃土，工程特性优良",
+      "bearing_capacity_ref_kpa": 200.0,
+      "friction_coefficient": 0.40,
+      "compressibility_index": 0.08,
+      "terzaghi_params": {
+        "c_ref_kpa": 35.0,
+        "phi_ref_deg": 28.0,
+        "gamma_sat_knm3": 19.5,
+        "gamma_dry_knm3": 16.0,
+        "w_opt_pct": 15.0,
+        "w_sat_pct": 32.0,
+        "k_c": 0.025,
+        "k_phi": 0.018
+      },
+      "settlement_params": {
+        "initial_void_ratio": 0.60,
+        "compression_index": 0.15,
+        "recompression_index": 0.03,
+        "coefficient_of_consolidation_cm2s": 0.003,
+        "secondary_compression_index": 0.002,
+        "layer_thickness_m": 3.5
+      },
+      "operational": {
+        "minimum_bearing_kpa": 150.0,
+        "max_settlement_mm": 60.0,
+        "max_differential_settlement_mm": 30.0
+      }
+    },
+    {
+      "type": "clay",
+      "name_cn": "黏土",
+      "description": "高塑性、高压缩性，饱和状态承载力大幅下降",
+      "bearing_capacity_ref_kpa": 120.0,
+      "friction_coefficient": 0.25,
+      "compressibility_index": 0.35,
+      "terzaghi_params": {
+        "c_ref_kpa": 60.0,
+        "phi_ref_deg": 18.0,
+        "gamma_sat_knm3": 18.0,
+        "gamma_dry_knm3": 14.5,
+        "w_opt_pct": 25.0,
+        "w_sat_pct": 52.0,
+        "k_c": 0.055,
+        "k_phi": 0.04
+      },
+      "settlement_params": {
+        "initial_void_ratio": 0.95,
+        "compression_index": 0.45,
+        "recompression_index": 0.08,
+        "coefficient_of_consolidation_cm2s": 0.0002,
+        "secondary_compression_index": 0.01,
+        "layer_thickness_m": 5.0
+      },
+      "operational": {
+        "minimum_bearing_kpa": 80.0,
+        "max_settlement_mm": 150.0,
+        "max_differential_settlement_mm": 60.0
+      }
+    },
+    {
+      "type": "rock",
+      "name_cn": "岩层",
+      "description": "完整或中等风化基岩，承载力极高",
+      "bearing_capacity_ref_kpa": 800.0,
+      "friction_coefficient": 0.65,
+      "compressibility_index": 0.001,
+      "terzaghi_params": {
+        "c_ref_kpa": 500.0,
+        "phi_ref_deg": 42.0,
+        "gamma_sat_knm3": 24.0,
+        "gamma_dry_knm3": 23.5,
+        "w_opt_pct": 0.5,
+        "w_sat_pct": 2.0,
+        "k_c": 0.002,
+        "k_phi": 0.001
+      },
+      "settlement_params": {
+        "initial_void_ratio": 0.05,
+        "compression_index": 0.002,
+        "recompression_index": 0.0005,
+        "coefficient_of_consolidation_cm2s": 0.1,
+        "secondary_compression_index": 0.0001,
+        "layer_thickness_m": 10.0
+      },
+      "operational": {
+        "minimum_bearing_kpa": 500.0,
+        "max_settlement_mm": 5.0,
+        "max_differential_settlement_mm": 2.0
+      }
+    }
+  ],
+  "analysis_defaults": {
+    "default_moisture_pct": 50.0,
+    "foundation_width_m": 6.2,
+    "foundation_depth_m": 0.5,
+    "load_incline_deg": 0.0,
+    "settlement_combined_factor": 1.2
+  }
+}

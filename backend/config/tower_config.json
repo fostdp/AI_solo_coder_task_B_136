@@ -1,0 +1,90 @@
+{
+  "towers": [
+    {
+      "tower_id": 1,
+      "tower_name": "临冲吕公车-一号",
+      "build_date": "1450-03-15",
+      "material": "松木+铁木",
+      "material_description": "主体为东北松，柱脚及榫卯处包铁加固",
+      "total_height": 18.5,
+      "total_layers": 5,
+      "base_width": 6.2,
+      "base_depth": 4.8,
+      "total_weight": 28.5,
+      "design_load": 850.0,
+      "design_wind_speed": 35.0,
+      "material_strength": 45.0,
+      "elastic_modulus": 12000.0,
+      "poisson_ratio": 0.38,
+      "shear_modulus": 4347.8,
+      "density_kgm3": 550.0,
+      "damping_ratio": 0.05,
+      "design_standard": {
+        "safety_factor_min": 1.5,
+        "second_order_enabled": true,
+        "fem_element_size": 1.2,
+        "arc_length_steps": 8,
+        "max_load_factor": 1.5
+      },
+      "operational_limits": {
+        "max_tilt_deg": 3.0,
+        "max_wind_speed_mps": 35.0,
+        "min_ground_bearing_kpa": 150.0
+      }
+    },
+    {
+      "tower_id": 2,
+      "tower_name": "临冲吕公车-二号",
+      "build_date": "1452-07-22",
+      "material": "柏木+楠木",
+      "material_description": "框架为金丝楠木，外覆板为柏木，榫卯嵌银丝加固",
+      "total_height": 21.0,
+      "total_layers": 6,
+      "base_width": 6.8,
+      "base_depth": 5.2,
+      "total_weight": 36.8,
+      "design_load": 1020.0,
+      "design_wind_speed": 40.0,
+      "material_strength": 52.0,
+      "elastic_modulus": 13500.0,
+      "poisson_ratio": 0.36,
+      "shear_modulus": 4963.2,
+      "density_kgm3": 520.0,
+      "damping_ratio": 0.045,
+      "design_standard": {
+        "safety_factor_min": 1.6,
+        "second_order_enabled": true,
+        "fem_element_size": 1.0,
+        "arc_length_steps": 10,
+        "max_load_factor": 1.8
+      },
+      "operational_limits": {
+        "max_tilt_deg": 2.5,
+        "max_wind_speed_mps": 40.0,
+        "min_ground_bearing_kpa": 180.0
+      }
+    }
+  ],
+  "global_simulation": {
+    "gravity": 9.81,
+    "air_density": 1.225,
+    "wind_drag_coefficient": 1.3,
+    "wind_exposure_coefficient": 1.0,
+    "terrain_roughness": 0.15,
+    "safety_factor_min": 1.5,
+    "second_order_enabled": true
+  },
+  "alert_thresholds": {
+    "tilt_warning_deg": 3.0,
+    "tilt_danger_deg": 5.0,
+    "stress_warning_ratio": 0.75,
+    "stress_danger_ratio": 0.90,
+    "wind_warning_ratio": 0.80,
+    "wind_danger_ratio": 0.95,
+    "ground_warning_ratio": 0.80,
+    "ground_danger_ratio": 0.95,
+    "vibration_resonance_bandwidth_pct": 5.0,
+    "vibration_danger_amplitude": 2.0,
+    "cooldown_seconds": 300
+  }
+}

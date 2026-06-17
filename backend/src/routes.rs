@@ -24,5 +24,9 @@ pub fn create_routes(state: SharedState) -> Router {
         .route("/api/stream/sensor", get(sse_sensor_stream))
         .route("/api/stream/analysis", get(sse_analysis_stream))
         .route("/api/stream/alerts", get(sse_alert_stream))
+        .route("/api/comparison/dynasty", get(compare_dynasty))
+        .route("/api/comparison/cross-era", get(compare_cross_era))
+        .route("/api/towers/:tower_id/moat", get(moat_analysis))
+        .route("/api/towers/:tower_id/climbing", get(climbing_viewpoints))
         .with_state(state)
 }

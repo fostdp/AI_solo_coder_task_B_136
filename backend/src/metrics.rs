@@ -2,15 +2,18 @@
 use once_cell::sync::Lazy;
 use prometheus::{
     IntCounter, IntCounterVec, IntGauge, IntGaugeVec,
-    Histogram, HistogramVec, HistogramOpts, Opts, Registry,
-    CounterVec, GaugeVec,
+    HistogramVec, HistogramOpts, Opts, Registry,
+    GaugeVec,
 };
+use std::collections::HashMap;
 use std::time::Instant;
 
 pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
+    let mut labels = HashMap::new();
+    labels.insert("system".to_string(), "siege_tower".to_string());
     let r = Registry::new_custom(
         Some("siege_tower".to_string()),
-        Some(vec!["system".to_string()])
+        Some(labels)
     ).unwrap_or_else(|_| Registry::new());
 
     r.register(Box::new(HTTP_REQUESTS_TOTAL.clone())).unwrap();

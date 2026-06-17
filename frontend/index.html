@@ -19,12 +19,16 @@
             <select id="towerSelect" class="tower-select">
                 <option value="1">临冲吕公车-一号 (5层 18.5m)</option>
                 <option value="2">临冲吕公车-二号 (6层 21.0m)</option>
+                <option value="3">云梯车 (3层 12.0m)</option>
+                <option value="4">冲车 (2层 5.5m)</option>
+                <option value="5">现代塔吊 (12层 60.0m)</option>
             </select>
             <div class="status-indicator" id="connectionStatus">
                 <span class="dot"></span>
                 <span class="status-text">连接中...</span>
             </div>
             <button id="simulateBtn" class="btn-primary">⚡ 运行一次仿真</button>
+            <button id="climbingBtn" class="btn-secondary">🏛️ 攀登体验</button>
         </div>
     </header>
 
@@ -197,6 +201,33 @@
             </div>
         </section>
 
+        <section class="panel panel-dynasty">
+            <div class="panel-header">
+                <h2>朝代攻城塔结构对比</h2>
+            </div>
+            <div class="dynasty-grid" id="dynastyGrid"></div>
+        </section>
+
+        <section class="panel panel-cross-era">
+            <div class="panel-header">
+                <h2>古代木构 vs 现代钢构</h2>
+            </div>
+            <div class="cross-era-grid" id="crossEraGrid"></div>
+        </section>
+
+        <section class="panel panel-moat">
+            <div class="panel-header">
+                <h2>护城河边地基稳定性</h2>
+                <div class="moat-inputs">
+                    <label>距河距离(m): <input type="number" id="moatDistInput" value="3" min="0.5" max="20" step="0.5"></label>
+                    <label>河深(m): <input type="number" id="moatDepthInput" value="4" min="1" max="10" step="0.5"></label>
+                    <label>水位深(m): <input type="number" id="waterTableInput" value="1.5" min="0" max="5" step="0.5"></label>
+                    <button id="moatAnalyzeBtn" class="btn-secondary">分析</button>
+                </div>
+            </div>
+            <div class="moat-result" id="moatResult"></div>
+        </section>
+
         <section class="panel panel-ground">
             <div class="panel-header">
                 <h2>地面适应性分析</h2>
@@ -229,6 +260,16 @@
             </div>
         </section>
     </main>
+
+    <div class="climbing-overlay" id="climbingOverlay" style="display:none;">
+        <div class="climbing-header">
+            <h2>🏛️ 虚拟攀登体验</h2>
+            <div class="climbing-info" id="climbingInfo">第1层</div>
+            <button class="btn-primary" id="exitClimbingBtn">退出攀登</button>
+        </div>
+        <div class="climbing-viewpoints" id="climbingViewpoints"></div>
+        <div class="climbing-description" id="climbingDesc"></div>
+    </div>
 
     <script type="module" src="/src/main.js"></script>
 </body>

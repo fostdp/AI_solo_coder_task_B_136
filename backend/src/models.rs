@@ -401,3 +401,109 @@ impl<T> ApiResponse<T> {
         }
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TowerCategory {
+    AncientWooden,
+    ModernSteel,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DynastyComparison {
+    pub towers: Vec<TowerComparisonItem>,
+    pub metrics: ComparisonMetrics,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TowerComparisonItem {
+    pub tower_id: u32,
+    pub tower_name: String,
+    pub dynasty: String,
+    pub category: TowerCategory,
+    pub safety_factor: f64,
+    pub wind_resistance_limit: f64,
+    pub natural_frequency: f64,
+    pub overturning_ratio: f64,
+    pub weight_efficiency: f64,
+    pub height_to_base_ratio: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ComparisonMetrics {
+    pub best_safety_factor: (u32, f64),
+    pub best_wind_resistance: (u32, f64),
+    pub best_frequency: (u32, f64),
+    pub best_overturning: (u32, f64),
+    pub best_weight_efficiency: (u32, f64),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CrossEraComparison {
+    pub ancient: EraComparisonData,
+    pub modern: EraComparisonData,
+    pub ratios: CrossEraRatios,
+    pub analysis: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EraComparisonData {
+    pub tower_id: u32,
+    pub tower_name: String,
+    pub era: String,
+    pub material: String,
+    pub elastic_modulus: f64,
+    pub material_strength: f64,
+    pub safety_factor: f64,
+    pub wind_resistance: f64,
+    pub natural_frequency: f64,
+    pub weight_per_height: f64,
+    pub load_efficiency: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CrossEraRatios {
+    pub elastic_modulus_ratio: f64,
+    pub strength_ratio: f64,
+    pub safety_factor_ratio: f64,
+    pub wind_resistance_ratio: f64,
+    pub frequency_ratio: f64,
+    pub weight_efficiency_ratio: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MoatAnalysis {
+    pub timestamp: chrono::DateTime<chrono::Utc>,
+    pub tower_id: u32,
+    pub moat_distance_m: f64,
+    pub moat_depth_m: f64,
+    pub water_table_depth_m: f64,
+    pub soil_type: String,
+    pub bearing_capacity_reduction: f64,
+    pub effective_bearing_capacity: f64,
+    pub slope_stability_factor: f64,
+    pub settlement_increase_pct: f64,
+    pub lateral_displacement_mm: f64,
+    pub overall_safety_factor: f64,
+    pub risk_level: u8,
+    pub recommendations: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClimbingViewpoint {
+    pub layer_id: u8,
+    pub layer_name: String,
+    pub camera_position: [f64; 3],
+    pub look_at: [f64; 3],
+    pub description: String,
+    pub visibility_range_m: f64,
+    pub strategic_value: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClimbingExperience {
+    pub tower_id: u32,
+    pub tower_name: String,
+    pub viewpoints: Vec<ClimbingViewpoint>,
+    pub total_height: f64,
+    pub battlefield_description: String,
+}

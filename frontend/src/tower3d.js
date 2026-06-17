@@ -109,6 +109,44 @@ export class Tower3DViewer {
     buildTower() {
         this.towerGroup = new THREE.Group();
         this.layerMeshes = [];
+        const tid = this.tower.tower_id;
+
+        if (tid === 3) {
+            this._buildLadderCart();
+        } else if (tid === 4) {
+            this._buildRamCart();
+        } else if (tid === 5) {
+            this._buildTowerCrane();
+        } else {
+            this._buildSiegeTower();
+        }
+
+        const H = this.tower.total_height;
+        const labelCanvas = document.createElement('canvas');
+        labelCanvas.width = 320; labelCanvas.height = 72;
+        const ctx = labelCanvas.getContext('2d');
+        ctx.fillStyle = 'rgba(10,15,26,0.88)';
+        if (ctx.roundRect) { ctx.roundRect(0, 0, 320, 72, 12); ctx.fill(); }
+        ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#e8edf5';
+        ctx.font = 'bold 22px "Microsoft YaHei", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(this.tower.tower_name, 160, 30);
+        ctx.fillStyle = '#60a5fa';
+        ctx.font = '14px "Microsoft YaHei", sans-serif';
+        ctx.fillText(`H=${this.tower.total_height}m  ${this.tower.total_layers}层  ${this.tower.material}`, 160, 54);
+
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(labelCanvas) }));
+        sprite.position.set(0, H + 4, 0);
+        sprite.scale.set(7.5, 1.7, 1);
+        this.towerGroup.add(sprite);
+
+        this.scene.add(this.towerGroup);
+        this.applyCutMode();
+        this.applyExplosion();
+    }
+
+    _buildSiegeTower() {
         const { total_height: H, total_layers: L, base_width: BW, base_depth: BD, material_strength: MS } = this.tower;
         const layerH = H / L;
         this.legendMaxStress = MS;
@@ -163,29 +201,309 @@ export class Tower3DViewer {
                 visible: true,
             });
         }
+    }
 
-        const labelCanvas = document.createElement('canvas');
-        labelCanvas.width = 320; labelCanvas.height = 72;
-        const ctx = labelCanvas.getContext('2d');
-        ctx.fillStyle = 'rgba(10,15,26,0.88)';
-        if (ctx.roundRect) { ctx.roundRect(0, 0, 320, 72, 12); ctx.fill(); }
-        ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 2; ctx.stroke();
-        ctx.fillStyle = '#e8edf5';
-        ctx.font = 'bold 22px "Microsoft YaHei", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(this.tower.tower_name, 160, 30);
-        ctx.fillStyle = '#60a5fa';
-        ctx.font = '14px "Microsoft YaHei", sans-serif';
-        ctx.fillText(`H=${this.tower.total_height}m  ${this.tower.total_layers}层  ${this.tower.material}`, 160, 54);
+    _buildLadderCart() {
+        const { total_height: H, total_layers: L, base_width: BW, base_depth: BD, material_strength: MS } = this.tower;
+        this.legendMaxStress = MS;
+        const woodMat = new THREE.MeshStandardMaterial({ color: 0x6b4423, roughness: 0.82, metalness: 0.03 });
+        const darkWoodMat = new THREE.MeshStandardMaterial({ color: 0x5a4018, roughness: 0.85, metalness: 0.03 });
+        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1a1208, roughness: 0.95, metalness: 0.2 });
 
-        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(labelCanvas) }));
-        sprite.position.set(0, H + 4, 0);
-        sprite.scale.set(7.5, 1.7, 1);
-        this.towerGroup.add(sprite);
+        const base = new THREE.Mesh(new THREE.BoxGeometry(BW, 0.5, BD), woodMat.clone());
+        base.position.y = 0.5;
+        base.castShadow = true; base.receiveShadow = true;
+        this.towerGroup.add(base);
 
-        this.scene.add(this.towerGroup);
-        this.applyCutMode();
-        this.applyExplosion();
+        for (let wi = 0; wi < 4; wi++) {
+            const sx = wi % 2 === 0 ? 1 : -1;
+            const sz = wi < 2 ? 1 : -1;
+            const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.25, 24), wheelMat);
+            wheel.rotation.z = Math.PI / 2;
+            wheel.position.set(sx * (BW / 2 - 0.3), 0.5, sz * (BD / 2 - 0.3));
+            wheel.castShadow = true; wheel.receiveShadow = true;
+            this.towerGroup.add(wheel);
+        }
+
+        const tiltAngle = -Math.PI * 20 / 180;
+        const colH = 8;
+        for (const sx of [-1, 1]) {
+            const col = new THREE.Mesh(new THREE.BoxGeometry(0.2, colH, 0.2), darkWoodMat.clone());
+            col.position.set(sx * (BW / 2 - 0.5), 0.5 + colH / 2 * Math.cos(tiltAngle), BD / 2 - 0.5 + colH / 2 * Math.sin(-tiltAngle));
+            col.rotation.x = tiltAngle;
+            col.castShadow = true;
+            this.towerGroup.add(col);
+        }
+
+        const ladderLen = 10;
+        const railMat = darkWoodMat.clone();
+        const leftRail = new THREE.Mesh(new THREE.BoxGeometry(0.12, ladderLen, 0.12), railMat);
+        leftRail.position.set(-0.6, 0.5 + ladderLen / 2 * Math.cos(tiltAngle), BD / 2 - 0.5 + ladderLen / 2 * Math.sin(-tiltAngle));
+        leftRail.rotation.x = tiltAngle;
+        leftRail.castShadow = true;
+        this.towerGroup.add(leftRail);
+
+        const rightRail = new THREE.Mesh(new THREE.BoxGeometry(0.12, ladderLen, 0.12), railMat);
+        rightRail.position.set(0.6, 0.5 + ladderLen / 2 * Math.cos(tiltAngle), BD / 2 - 0.5 + ladderLen / 2 * Math.sin(-tiltAngle));
+        rightRail.rotation.x = tiltAngle;
+        rightRail.castShadow = true;
+        this.towerGroup.add(rightRail);
+
+        const rungCount = 14;
+        for (let ri = 1; ri <= rungCount; ri++) {
+            const t = ri / (rungCount + 1);
+            const rung = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 3.2), woodMat.clone());
+            rung.position.set(0, 0.5 + t * ladderLen * Math.cos(tiltAngle), BD / 2 - 0.5 + t * ladderLen * Math.sin(-tiltAngle));
+            rung.rotation.x = tiltAngle;
+            rung.castShadow = true;
+            this.towerGroup.add(rung);
+        }
+
+        const topY = 0.5 + ladderLen * Math.cos(tiltAngle);
+        const topZ = BD / 2 - 0.5 + ladderLen * Math.sin(-tiltAngle);
+        const topPlat = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.15, 1.5), woodMat.clone());
+        topPlat.position.set(0, topY, topZ);
+        topPlat.castShadow = true;
+        this.towerGroup.add(topPlat);
+
+        const layerDefs = [
+            { yMid: 0.5, label: 1 },
+            { yMid: topY * 0.5, label: 2 },
+            { yMid: topY, label: 3 },
+        ];
+
+        for (const ld of layerDefs) {
+            const layerGroup = new THREE.Group();
+            layerGroup.userData.layer = ld.label;
+            layerGroup.userData.baseY = ld.yMid;
+            this.towerGroup.add(layerGroup);
+
+            this.layerMeshes.push({
+                layer: ld.label,
+                group: layerGroup,
+                materials: this._collectMaterials(layerGroup),
+                stressValue: 0,
+                stressRatio: 0,
+                baseOpacity: 1.0,
+                visible: true,
+            });
+        }
+    }
+
+    _buildRamCart() {
+        const { total_height: H, total_layers: L, base_width: BW, base_depth: BD, material_strength: MS } = this.tower;
+        this.legendMaxStress = MS;
+        const darkWoodMat = new THREE.MeshStandardMaterial({ color: 0x4a3a1a, roughness: 0.85, metalness: 0.05 });
+        const ironMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.6, metalness: 0.7 });
+
+        const base = new THREE.Mesh(new THREE.BoxGeometry(BW, 1.0, BD), darkWoodMat.clone());
+        base.position.y = 0.8;
+        base.castShadow = true; base.receiveShadow = true;
+        this.towerGroup.add(base);
+
+        for (let wi = 0; wi < 4; wi++) {
+            const sx = wi % 2 === 0 ? 1 : -1;
+            const sz = wi < 2 ? 1 : -1;
+            const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.3, 24), new THREE.MeshStandardMaterial({ color: 0x1a1208, roughness: 0.95, metalness: 0.2 }));
+            wheel.rotation.z = Math.PI / 2;
+            wheel.position.set(sx * (BW / 2 - 0.5), 0.7, sz * (BD / 2 - 0.4));
+            wheel.castShadow = true; wheel.receiveShadow = true;
+            this.towerGroup.add(wheel);
+        }
+
+        const pillarH = 2.5;
+        const pillarY = 1.3 + pillarH / 2;
+        const pillarMat = darkWoodMat.clone();
+        for (const sx of [-1, 1]) {
+            for (const sz of [-1, 1]) {
+                const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.2, pillarH, 0.2), pillarMat);
+                pillar.position.set(sx * (BW / 2 - 0.3), pillarY, sz * (BD / 2 - 0.3));
+                pillar.castShadow = true;
+                this.towerGroup.add(pillar);
+            }
+        }
+
+        const roofY = pillarY + pillarH / 2;
+        const roofH = 1.2;
+        const roofGeo = new THREE.ConeGeometry(BW * 0.7, roofH, 4);
+        const roof = new THREE.Mesh(roofGeo, darkWoodMat.clone());
+        roof.position.y = roofY + roofH / 2;
+        roof.rotation.y = Math.PI / 4;
+        roof.castShadow = true;
+        this.towerGroup.add(roof);
+
+        const beamY = roofY - 0.3;
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(BW * 0.8, 0.2, 0.2), darkWoodMat.clone());
+        beam.position.set(0, beamY, 0);
+        beam.castShadow = true;
+        this.towerGroup.add(beam);
+
+        const ramY = 1.5;
+        const ram = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.25, 4.0, 16), darkWoodMat.clone());
+        ram.rotation.z = Math.PI / 2;
+        ram.position.set(0, ramY, 0);
+        ram.castShadow = true;
+        this.towerGroup.add(ram);
+
+        const headCone = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.6, 12), ironMat);
+        headCone.rotation.z = -Math.PI / 2;
+        headCone.position.set(2.3, ramY, 0);
+        headCone.castShadow = true;
+        this.towerGroup.add(headCone);
+
+        for (const chainX of [-0.8, 0.8]) {
+            const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, beamY - ramY, 8), ironMat);
+            chain.position.set(chainX, (beamY + ramY) / 2, 0);
+            chain.castShadow = true;
+            this.towerGroup.add(chain);
+        }
+
+        const layer1Group = new THREE.Group();
+        layer1Group.userData.layer = 1;
+        layer1Group.userData.baseY = 1.3;
+        this.towerGroup.add(layer1Group);
+        this.layerMeshes.push({
+            layer: 1, group: layer1Group, materials: this._collectMaterials(layer1Group),
+            stressValue: 0, stressRatio: 0, baseOpacity: 1.0, visible: true,
+        });
+
+        const layer2Group = new THREE.Group();
+        layer2Group.userData.layer = 2;
+        layer2Group.userData.baseY = ramY;
+        this.towerGroup.add(layer2Group);
+        this.layerMeshes.push({
+            layer: 2, group: layer2Group, materials: this._collectMaterials(layer2Group),
+            stressValue: 0, stressRatio: 0, baseOpacity: 1.0, visible: true,
+        });
+    }
+
+    _buildTowerCrane() {
+        const { total_height: H, total_layers: L, material_strength: MS } = this.tower;
+        this.legendMaxStress = MS;
+        const yellowMat = new THREE.MeshStandardMaterial({ color: 0xcc8800, roughness: 0.6, metalness: 0.3 });
+        const steelMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5, metalness: 0.6 });
+        const cwMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.7, metalness: 0.2 });
+
+        const layerH = H / L;
+
+        for (let layer = 1; layer <= L; layer++) {
+            const layerGroup = new THREE.Group();
+            const yBase = (layer - 1) * layerH;
+            const yMid = yBase + layerH / 2;
+
+            const chordH = layerH;
+            for (const sx of [-1, 1]) {
+                for (const sz of [-1, 1]) {
+                    const chord = new THREE.Mesh(new THREE.BoxGeometry(0.15, chordH, 0.15), yellowMat.clone());
+                    chord.position.set(sx * 0.8, yMid, sz * 0.8);
+                    chord.castShadow = true;
+                    layerGroup.add(chord);
+                }
+            }
+
+            for (const y of [yBase, yBase + layerH]) {
+                for (const sz of [-1, 1]) {
+                    const hBrace = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 0.08), steelMat.clone());
+                    hBrace.position.set(0, y, sz * 0.8);
+                    hBrace.castShadow = true;
+                    layerGroup.add(hBrace);
+                }
+                for (const sx of [-1, 1]) {
+                    const hBrace = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 1.6), steelMat.clone());
+                    hBrace.position.set(sx * 0.8, y, 0);
+                    hBrace.castShadow = true;
+                    layerGroup.add(hBrace);
+                }
+            }
+
+            const faces = [
+                { sx: 0, sz: 1, rotAxis: 'z' },
+                { sx: 0, sz: -1, rotAxis: 'z' },
+                { sx: 1, sz: 0, rotAxis: 'x' },
+                { sx: -1, sz: 0, rotAxis: 'x' },
+            ];
+            for (const f of faces) {
+                const diagLen = Math.sqrt(1.6 * 1.6 + chordH * chordH);
+                const diag1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, diagLen, 0.06), steelMat.clone());
+                if (f.rotAxis === 'z') {
+                    diag1.position.set(f.sx * 0.8 + 0.4, yMid, f.sz * 0.8);
+                    diag1.rotation.z = Math.atan2(chordH, 1.6) * (f.sx || f.sz);
+                } else {
+                    diag1.position.set(f.sx * 0.8, yMid, f.sz * 0.8 + 0.4);
+                    diag1.rotation.x = -Math.atan2(chordH, 1.6) * (f.sx || f.sz);
+                }
+                diag1.castShadow = true;
+                layerGroup.add(diag1);
+
+                const diag2 = diag1.clone();
+                if (f.rotAxis === 'z') {
+                    diag2.position.x = f.sx * 0.8 - 0.4;
+                    diag2.rotation.z = -diag1.rotation.z;
+                } else {
+                    diag2.position.z = f.sz * 0.8 - 0.4;
+                    diag2.rotation.x = -diag1.rotation.x;
+                }
+                layerGroup.add(diag2);
+            }
+
+            layerGroup.userData.layer = layer;
+            layerGroup.userData.baseY = yMid;
+            this.towerGroup.add(layerGroup);
+
+            this.layerMeshes.push({
+                layer,
+                group: layerGroup,
+                materials: this._collectMaterials(layerGroup),
+                stressValue: 0,
+                stressRatio: 0,
+                baseOpacity: 1.0,
+                visible: true,
+            });
+        }
+
+        const topY = H;
+        const slewing = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 2), yellowMat.clone());
+        slewing.position.set(0, topY + 0.5, 0);
+        slewing.castShadow = true;
+        this.towerGroup.add(slewing);
+
+        const cab = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 1.5), steelMat.clone());
+        cab.position.set(0.5, topY + 1.75, 0);
+        cab.castShadow = true;
+        this.towerGroup.add(cab);
+
+        const jibLen = 30;
+        const jib = new THREE.Mesh(new THREE.BoxGeometry(jibLen, 0.8, 0.8), yellowMat.clone());
+        jib.position.set(jibLen / 2, topY + 1.4, 0);
+        jib.castShadow = true;
+        this.towerGroup.add(jib);
+
+        const jibBraceCount = 8;
+        for (let i = 1; i <= jibBraceCount; i++) {
+            const bx = i * (jibLen / (jibBraceCount + 1));
+            const brace = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.2, 0.06), steelMat.clone());
+            brace.position.set(bx, topY + 0.8, 0);
+            brace.castShadow = true;
+            this.towerGroup.add(brace);
+        }
+
+        const cjLen = 10;
+        const counterJib = new THREE.Mesh(new THREE.BoxGeometry(cjLen, 0.8, 0.8), yellowMat.clone());
+        counterJib.position.set(-cjLen / 2, topY + 1.4, 0);
+        counterJib.castShadow = true;
+        this.towerGroup.add(counterJib);
+
+        const counterweight = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 3), cwMat);
+        counterweight.position.set(-cjLen + 1.5, topY + 0.4, 0);
+        counterweight.castShadow = true;
+        this.towerGroup.add(counterweight);
+
+        const cableGeo = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(jibLen - 1, topY + 1.8, 0),
+            new THREE.Vector3(jibLen - 1, topY - 8, 0),
+        ]);
+        const cable = new THREE.Line(cableGeo, new THREE.LineBasicMaterial({ color: 0xcccccc }));
+        this.towerGroup.add(cable);
     }
 
     _createLayerShell(w, d, h, layer, yMid) {

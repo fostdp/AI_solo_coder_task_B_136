@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>临冲吕公车 · 结构仿真与稳定性分析系统</title>
+    <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">🏯</div>
+            <div>
+                <h1>古代临冲吕公车结构仿真与稳定性分析系统</h1>
+                <div class="subtitle">明代军事史复原研究 · 有限元结构分析平台</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <select id="towerSelect" class="tower-select">
+                <option value="1">临冲吕公车-一号 (5层 18.5m)</option>
+                <option value="2">临冲吕公车-二号 (6层 21.0m)</option>
+            </select>
+            <div class="status-indicator" id="connectionStatus">
+                <span class="dot"></span>
+                <span class="status-text">连接中...</span>
+            </div>
+            <button id="simulateBtn" class="btn-primary">⚡ 运行一次仿真</button>
+        </div>
+    </header>
+
+    <main class="main-grid">
+        <section class="panel panel-3d">
+            <div class="panel-header">
+                <h2>三维结构模型</h2>
+                <div class="view-controls">
+                    <button class="view-btn" data-view="front">正视</button>
+                    <button class="view-btn" data-view="side">侧视</button>
+                    <button class="view-btn" data-view="top">俯视</button>
+                    <button class="view-btn active" data-view="perspective">透视</button>
+                    <button class="view-btn" data-view="iso">等轴</button>
+                    <span class="separator"></span>
+                    <button class="view-btn active" id="btnStressView">应力云图</button>
+                    <button class="view-btn" id="btnStructView">结构视图</button>
+                    <span class="separator"></span>
+                    <div class="cut-group">
+                        <span class="cut-label">剖切</span>
+                        <button class="view-btn active" data-cut="none">无</button>
+                        <button class="view-btn" data-cut="cut_front">前</button>
+                        <button class="view-btn" data-cut="cut_right">右</button>
+                        <button class="view-btn" data-cut="cut_quarter">1/4</button>
+                        <button class="view-btn" data-cut="cut_half">半剖</button>
+                    </div>
+                    <span class="separator"></span>
+                    <label class="explode-slider">
+                        <span>爆炸</span>
+                        <input type="range" id="explodeSlider" min="0" max="4" step="0.1" value="0">
+                    </label>
+                </div>
+            </div>
+            <div class="layer-control-bar" id="layerControlBar"></div>
+            <div class="canvas-wrap">
+                <canvas id="towerCanvas"></canvas>
+                <div id="tiltIndicator" class="tilt-indicator">
+                    <div class="tilt-gauge">
+                        <div class="tilt-center"></div>
+                        <div class="tilt-pointer" id="tiltPointer"></div>
+                        <div class="tilt-rings">
+                            <div class="ring r1"><span>1°</span></div>
+                            <div class="ring r2"><span>3°</span></div>
+                            <div class="ring r3"><span>5°</span></div>
+                        </div>
+                        <div class="tilt-cross"></div>
+                    </div>
+                    <div class="tilt-info">
+                        <div><span class="label">X轴倾斜</span><span id="tiltXVal">0.00°</span></div>
+                        <div><span class="label">Y轴倾斜</span><span id="tiltYVal">0.00°</span></div>
+                        <div><span class="label">总倾斜</span><span id="tiltTotalVal" class="tilt-value">0.00°</span></div>
+                        <div><span class="label">最大层</span><span id="tiltMaxLayer">-</span></div>
+                    </div>
+                </div>
+                <div class="legend-panel">
+                    <div class="legend-title">应力云图 (MPa)</div>
+                    <div class="legend-bar">
+                        <div class="legend-gradient"></div>
+                        <div class="legend-labels">
+                            <span id="legendMin">0</span>
+                            <span id="legendQ1">-</span>
+                            <span id="legendMid">-</span>
+                            <span id="legendQ3">-</span>
+                            <span id="legendMax">45</span>
+                        </div>
+                    </div>
+                    <div class="legend-levels">
+                        <div class="lvl safe"><span></span>安全 (&lt;75%)</div>
+                        <div class="lvl warn"><span></span>预警 (75-90%)</div>
+                        <div class="lvl danger"><span></span>危险 (&gt;90%)</div>
+                    </div>
+                </div>
+                <div class="wind-indicator" id="windIndicator">
+                    <div class="wind-arrow" id="windArrow"></div>
+                    <div class="wind-speed"><span id="windSpeedVal">0</span> m/s</div>
+                    <div class="wind-level" id="windLevelLabel">无</div>
+                </div>
+            </div>
+        </section>
+
+        <aside class="panel panel-summary">
+            <div class="panel-header">
+                <h2>整体安全评估</h2>
+            </div>
+            <div class="summary-grid">
+                <div class="metric-card sf">
+                    <div class="metric-icon">🛡️</div>
+                    <div class="metric-body">
+                        <div class="metric-label">安全系数</div>
+                        <div class="metric-value" id="sfVal">--</div>
+                        <div class="metric-bar">
+                            <div class="bar-fill" id="sfBar"></div>
+                            <div class="bar-target" style="left:15%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card stability">
+                    <div class="metric-icon">📐</div>
+                    <div class="metric-body">
+                        <div class="metric-label">稳定裕度</div>
+                        <div class="metric-value" id="marginVal">--</div>
+                        <div class="metric-bar">
+                            <div class="bar-fill" id="marginBar"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card stress">
+                    <div class="metric-icon">💥</div>
+                    <div class="metric-body">
+                        <div class="metric-label">最大应力 (MPa)</div>
+                        <div class="metric-value" id="maxStressVal">--</div>
+                        <div class="metric-sub">临界值: <span id="criticalStressVal">--</span></div>
+                        <div class="metric-bar">
+                            <div class="bar-fill" id="stressBar"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card wind">
+                    <div class="metric-icon">🌪️</div>
+                    <div class="metric-body">
+                        <div class="metric-label">风荷载系数</div>
+                        <div class="metric-value" id="windFactorVal">--</div>
+                        <div class="metric-sub">极限: <span id="windLimitVal">--</span> m/s</div>
+                        <div class="metric-bar">
+                            <div class="bar-fill" id="windBar"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card ground">
+                    <div class="metric-icon">🏔️</div>
+                    <div class="metric-body">
+                        <div class="metric-label">地面承载力利用</div>
+                        <div class="metric-value" id="groundRatioVal">--</div>
+                        <div class="metric-sub">土壤: <span id="soilTypeVal">--</span></div>
+                        <div class="metric-bar">
+                            <div class="bar-fill" id="groundBar"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card order">
+                    <div class="metric-icon">⚛️</div>
+                    <div class="metric-body">
+                        <div class="metric-label">二阶效应放大</div>
+                        <div class="metric-value" id="orderVal">--</div>
+                        <div class="metric-sub">自振频率: <span id="freqVal">--</span> Hz</div>
+                    </div>
+                </div>
+            </div>
+            <div class="stability-status" id="stabilityStatus">
+                <div class="status-badge" id="statusBadge">等待数据...</div>
+            </div>
+        </aside>
+
+        <section class="panel panel-charts">
+            <div class="panel-header">
+                <h2>各层参数分布</h2>
+                <div class="chart-switch">
+                    <button class="sw active" data-chart="stress">应力</button>
+                    <button class="sw" data-chart="tilt">倾斜</button>
+                    <button class="sw" data-chart="wind">风载</button>
+                </div>
+            </div>
+            <div class="charts-container">
+                <div class="chart-box main-chart">
+                    <canvas id="layerChart"></canvas>
+                </div>
+                <div class="chart-box mini-chart">
+                    <div class="chart-title">应力历史趋势</div>
+                    <canvas id="historyChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel panel-ground">
+            <div class="panel-header">
+                <h2>地面适应性分析</h2>
+                <div class="ground-inputs">
+                    <label>风速 (m/s): <input type="number" id="windInput" value="20" min="0" max="80"></label>
+                    <label>倾斜 (°): <input type="number" id="tiltInput" value="1.0" step="0.1" min="0" max="10"></label>
+                    <label>含水率 (%): <input type="number" id="moistureInput" value="50" step="1" min="0" max="100"></label>
+                    <button id="groundAnalyzeBtn" class="btn-secondary">重新分析</button>
+                </div>
+            </div>
+            <div class="ground-grid" id="groundGrid">
+            </div>
+        </section>
+
+        <aside class="panel panel-alerts">
+            <div class="panel-header">
+                <h2>实时告警</h2>
+                <span class="alert-count" id="alertCount">0</span>
+            </div>
+            <div class="alert-list" id="alertList">
+                <div class="empty-state">暂无告警事件</div>
+            </div>
+        </aside>
+
+        <section class="panel panel-info">
+            <div class="panel-header">
+                <h2>塔体信息</h2>
+            </div>
+            <div class="info-content" id="towerInfo">
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>

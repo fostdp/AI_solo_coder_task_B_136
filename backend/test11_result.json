@@ -1,0 +1,9 @@
+{
+  "name": "Test11_FullAnalysis",
+  "method": "GET",
+  "path": "/api/towers/1/analysis/full",
+  "status": 200,
+  "time_ms": 25381,
+  "result": "PASS",
+  "response": "{\"code\":200,\"message\":\"success\",\"data\":{\"fem_sample\":[{\"displacement_total\":0.0,\"displacement_x\":0.0,\"displacement_y\":0.0,\"displacement_z\":0.0,\"layer_id\":1,\"node_id\":0,\"node_x\":-3.1,\"node_y\":-2.4,\"node_z\":0.0,\"plastic_strain\":0.023949717720966893,\"stress_xx\":2.0,\"stress_xy\":0.3,\"stress_yy\":1.6,\"stress_yz\":0.2,\"stress_zx\":0.25,\"stress_zz\":90.0,\"timestamp\":\"2026-06-17T00:17:45.135374400Z\",\"tower_id\":1,\"von_mises\":152.77372974435102},{\"displacement_total\":0.0,\"displacement_x\":0.0,\"displacement_y\":0"
+}

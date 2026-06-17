@@ -1,0 +1,44 @@
+
+<!-- ClickHouse 服务端额外配置 -->
+<yandex>
+    <!-- 日志级别 -->
+    <logger>
+        <level>information</level>
+        <log>/var/log/clickhouse-server/clickhouse-server.log</log>
+        <errorlog>/var/log/clickhouse-server/clickhouse-server.err.log</errorlog>
+        <size>1000M</size>
+        <count>10</count>
+    </logger>
+
+    <!-- 监听地址 -->
+    <listen_host>0.0.0.0</listen_host>
+
+    <!-- HTTP端口 -->
+    <http_port>8123</http_port>
+    <tcp_port>9000</tcp_port>
+
+    <!-- Prometheus 指标端点 -->
+    <prometheus>
+        <endpoint>/metrics</endpoint>
+        <port>9363</port>
+        <metrics>true</metrics>
+        <events>true</events>
+        <asynchronous_metrics>true</asynchronous_metrics>
+    </prometheus>
+
+    <!-- 最大内存使用 -->
+    <max_memory_usage>10000000000</max_memory_usage>
+    <max_server_memory_usage_to_ram_ratio>0.7</max_server_memory_usage_to_ram_ratio>
+
+    <!-- 并发设置 -->
+    <max_concurrent_queries>100</max_concurrent_queries>
+
+    <!-- 合并设置 -->
+    <merge_tree>
+        <max_suspicious_broken_parts>5</max_suspicious_broken_parts>
+        <parts_to_delay_insert>150</parts_to_delay_insert>
+        <parts_to_throw_insert>300</parts_to_throw_insert>
+        <!-- 允许后台异步删除过期TTL数据 -->
+        <allow_remote_fs_zero_copy_replication>0</allow_remote_fs_zero_copy_replication>
+    </merge_tree>
+</yandex>

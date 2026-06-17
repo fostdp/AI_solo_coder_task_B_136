@@ -1,0 +1,76 @@
+﻿=== Process check ===
+
+   Id Name               StartTime        
+   -- ----               ---------        
+30248 siege-tower-server 2026/6/17 7:57:54
+
+
+
+=== Health Check ===
+OK: {"service":"siege-tower-backend","status":"ok","version":"2.0.0"}
+
+=== Running Full FEM Analysis (GET /api/towers/1/analysis/full) ===
+FAIL: 远程服务器返回错误: (500) 内部服务器错误。
+ERROR BODY: {"code":500,"message":"仿真失败: channel closed","timestamp":"2026-06-16T23:59:00.660898600+00:00"}
+
+=== all.log tail 60 ===
+e.rs:65:16
+  34: tokio::runtime::scheduler::multi_thread::worker::run
+             at C:\Users\y\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.52.3\src\runtime\scheduler\mult
+i_thread\worker.rs:537:5
+  35: tokio::runtime::scheduler::multi_thread::worker::Launch::launch::{{closure}}
+             at C:\Users\y\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.52.3\src\runtime\scheduler\mult
+i_thread\worker.rs:503:45
+  36: <tokio::runtime::blocking::task::BlockingTask<T> as core::future::future::Future>::poll
+             at C:\Users\y\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.52.3\src\runtime\blocking\task.
+rs:42:21
+  37: tokio::runtime::task::core::Core<T,S>::poll::{{closure}}
+             at C:\Users\y\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.52.3\src\runtime\task\core.rs:3
+75:24
+  38: tokio::loom::std::unsafe_cell::UnsafeCell<T>::with_mut
+             at C:\Users\y\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.52.3\src\loom\std\unsafe_cell.r
+s:16:9
+  39: tokio::runtime::task::core::Core<T,S>::poll
+             at C:\Users\y\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.52.3\src\runtime\task\core.rs:3
+64:30
+  40: tokio::runtime::task::harness::poll_future::{{closure}}
+             at C:\Users\y\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.52.3\src\runtime\task\harness.r
+s:535:30
+  41: <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once
+             at /rustc/ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96/library\core\src\panic\unwind_safe.rs:275:9
+  42: std::panicking::catch_unwind::do_call
+             at /rustc/ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96/library\std\src\panicking.rs:581:40
+  43: __rust_try
+  44: std::panicking::catch_unwind
+             at /rustc/ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96/library\std\src\panicking.rs:544:19
+  45: std::panic::catch_unwind
+             at /rustc/ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96/library\std\src\panic.rs:359:14
+  46: tokio::runtime::task::harness::poll_future
+             at C:\Users\y\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.52.3\src\runtime\task\harness.r
+s:523:18
+  47: tokio::runtime::task::harness::Harness<T,S>::poll_inner
+             at C:\Users\y\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.52.3\src\runtime\task\harness.r
+s:210:27
+  48: tokio::runtime::task::harness::Harness<T,S>::poll
+             at C:\Users\y\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.52.3\src\runtime\task\harness.r
+s:155:20
+  49: tokio::runtime::task::raw::poll
+             at C:\Users\y\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.52.3\src\runtime\task\raw.rs:33
+7:13
+  50: tokio::runtime::task::raw::RawTask::poll
+             at C:\Users\y\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.52.3\src\runtime\task\raw.rs:26
+7:18
+  51: tokio::runtime::task::UnownedTask<S>::run
+             at C:\Users\y\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.52.3\src\runtime\task\mod.rs:54
+7:13
+  52: tokio::runtime::blocking::pool::Task::run
+             at C:\Users\y\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.52.3\src\runtime\blocking\pool.
+rs:161:19
+  53: tokio::runtime::blocking::pool::Inner::run
+             at C:\Users\y\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.52.3\src\runtime\blocking\pool.
+rs:518:22
+  54: tokio::runtime::blocking::pool::Spawner::spawn_thread::{{closure}}
+             at C:\Users\y\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.52.3\src\runtime\blocking\pool.
+rs:474:47
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+[2m2026-06-16T23:59:00.661133Z[0m [31mERROR[0m ThreadId(02) [2mtower_http::trace::on_failure[0m[2m:[0m response failed [3mclassification[0m[2m=[0mStatus code: 500 Internal Server Error [3mlatency[0m[2m=[0m4677 ms

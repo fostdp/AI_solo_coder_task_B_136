@@ -11,6 +11,12 @@ pub mod routes;
 pub mod metrics;
 pub mod moat_analyzer;
 
+pub mod structure_comparator;
+pub mod era_comparator;
+pub mod foundation_analyzer;
+pub mod vr_siege_tower;
+pub mod fem_executor;
+
 pub mod dtu_receiver;
 pub mod structural_simulator;
 pub mod soil_analyzer;

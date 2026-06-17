@@ -1,8 +1,11 @@
 import { Chart, registerables } from 'chart.js';
 import { SiegeTower3D } from './siege_tower_3d.js';
+import { StructureComparator } from './structure_comparator.js';
+import { EraComparator } from './era_comparator.js';
+import { FoundationAnalyzer } from './foundation_analyzer.js';
+import { VrSiegeTower } from './vr_siege_tower.js';
+import { API_BASE } from './config.js';
 Chart.register(...registerables);
-
-const API_BASE = '';
 
 const DEFAULT_TOWERS = {
     1: {
@@ -72,6 +75,13 @@ export class StabilityPanel {
         this.currentChartMode = 'stress';
         this.climbingMode = false;
         this.savedCameraState = null;
+
+        const getTower = () => this.currentTower;
+        const getViewer = () => this.tower3D?.viewer;
+        this.structureComparator = new StructureComparator(getTower);
+        this.eraComparator = new EraComparator(getTower);
+        this.foundationAnalyzer = new FoundationAnalyzer(getTower);
+        this.vrSiegeTower = new VrSiegeTower(getTower, getViewer);
     }
 
     init() {
@@ -866,238 +876,70 @@ export class StabilityPanel {
     }
 
     async loadDynastyComparison() {
-        let data = null;
-        try {
-            const resp = await fetch(`${API_BASE}/api/comparison/dynasty?wind_speed=15`);
-            const json = await resp.json();
-            if (json.code === 200) data = json.data;
-        } catch (e) {}
-
-        if (!data) data = this._generateMockDynastyComparison();
+        const data = await this.structureComparator.load(15, 0.5);
         this._renderDynastyComparison(data);
+        return data;
     }
 
     _generateMockDynastyComparison() {
-        const towers = Object.values(DEFAULT_TOWERS).filter(t => t.tower_id <= 4);
-        return towers.map(t => ({
-            tower_id: t.tower_id,
-            tower_name: t.tower_name,
-            safety_factor: (t.material_strength / (10 + t.total_height * 0.8)).toFixed(2),
-            max_stress: (10 + t.total_height * 0.8).toFixed(1),
-            wind_resistance: t.design_wind_speed,
-            weight_efficiency: (t.design_load / t.total_weight).toFixed(1),
-        }));
+        return this.structureComparator._generateMockData();
     }
 
     _renderDynastyComparison(data) {
-        const grid = document.getElementById('dynastyGrid');
-        if (!grid) return;
-
-        const metrics = ['safety_factor', 'max_stress', 'wind_resistance', 'weight_efficiency'];
-        const labels = { safety_factor: '安全系数', max_stress: '最大应力(MPa)', wind_resistance: '抗风(m/s)', weight_efficiency: '荷载效率(kN/t)' };
-        const bestBy = { safety_factor: 'max', max_stress: 'min', wind_resistance: 'max', weight_efficiency: 'max' };
-
-        const bestVals = {};
-        for (const m of metrics) {
-            const vals = data.map(d => parseFloat(d[m]));
-            bestVals[m] = bestBy[m] === 'max' ? Math.max(...vals) : Math.min(...vals);
-        }
-
-        grid.innerHTML = data.map(d => `
-            <div class="dynasty-card">
-                <div class="dynasty-card-title">${d.tower_name}</div>
-                ${metrics.map(m => {
-                    const v = parseFloat(d[m]);
-                    const isBest = v === bestVals[m];
-                    return `<div class="dynasty-metric ${isBest ? 'best' : ''}">
-                        <span class="dynasty-metric-label">${labels[m]}</span>
-                        <span class="dynasty-metric-value">${d[m]}</span>
-                    </div>`;
-                }).join('')}
-            </div>
-        `).join('');
+        const container = document.getElementById('dynastyGrid');
+        this.structureComparator.render(container, data);
     }
 
     async loadCrossEraComparison() {
-        let data = null;
-        try {
-            const resp = await fetch(`${API_BASE}/api/comparison/cross-era?wind_speed=15`);
-            const json = await resp.json();
-            if (json.code === 200) data = json.data;
-        } catch (e) {}
-
-        if (!data) data = this._generateMockCrossEraComparison();
+        const data = await this.eraComparator.load(15, 0.5);
         this._renderCrossEraComparison(data);
+        return data;
     }
 
     _generateMockCrossEraComparison() {
-        const ancient = DEFAULT_TOWERS[1];
-        const modern = DEFAULT_TOWERS[5];
-        return {
-            ancient: {
-                name: ancient.tower_name,
-                material: ancient.material,
-                height: ancient.total_height,
-                weight: ancient.total_weight,
-                strength: ancient.material_strength,
-                elastic_modulus: ancient.elastic_modulus,
-                design_load: ancient.design_load,
-                wind_speed: ancient.design_wind_speed,
-            },
-            modern: {
-                name: modern.tower_name,
-                material: modern.material,
-                height: modern.total_height,
-                weight: modern.total_weight,
-                strength: modern.material_strength,
-                elastic_modulus: modern.elastic_modulus,
-                design_load: modern.design_load,
-                wind_speed: modern.design_wind_speed,
-            },
-        };
+        return this.eraComparator._generateMockData();
     }
 
     _renderCrossEraComparison(data) {
-        const grid = document.getElementById('crossEraGrid');
-        if (!grid) return;
-
-        const metrics = [
-            { key: 'height', label: '高度(m)' },
-            { key: 'weight', label: '重量(t)' },
-            { key: 'strength', label: '材料强度(MPa)' },
-            { key: 'elastic_modulus', label: '弹性模量(MPa)' },
-            { key: 'design_load', label: '设计荷载(kN)' },
-            { key: 'wind_speed', label: '抗风(m/s)' },
-        ];
-
-        const maxVals = {};
-        for (const m of metrics) {
-            maxVals[m.key] = Math.max(data.ancient[m.key], data.modern[m.key]) || 1;
-        }
-
-        grid.innerHTML = `
-            <div class="era-column ancient">
-                <div class="era-column-title">${data.ancient.name}</div>
-                <div class="era-column-sub">${data.ancient.material}</div>
-                ${metrics.map(m => {
-                    const pct = (data.ancient[m.key] / maxVals[m.key]) * 100;
-                    const ratio = data.ancient[m.key] / (data.modern[m.key] || 1);
-                    return `<div class="era-metric-row">
-                        <span class="era-metric-label">${m.label}</span>
-                        <div class="era-metric-bar">
-                            <div class="era-bar-fill ancient" style="width:${pct}%"></div>
-                        </div>
-                        <span class="era-metric-value">${data.ancient[m.key]}</span>
-                        <span class="era-ratio">${ratio.toFixed(1)}x</span>
-                    </div>`;
-                }).join('')}
-            </div>
-            <div class="era-column modern">
-                <div class="era-column-title">${data.modern.name}</div>
-                <div class="era-column-sub">${data.modern.material}</div>
-                ${metrics.map(m => {
-                    const pct = (data.modern[m.key] / maxVals[m.key]) * 100;
-                    return `<div class="era-metric-row">
-                        <span class="era-metric-label">${m.label}</span>
-                        <div class="era-metric-bar">
-                            <div class="era-bar-fill modern" style="width:${pct}%"></div>
-                        </div>
-                        <span class="era-metric-value">${data.modern[m.key]}</span>
-                    </div>`;
-                }).join('')}
-            </div>
-        `;
+        const container = document.getElementById('crossEraGrid');
+        this.eraComparator.render(container, data);
     }
 
     async loadMoatAnalysis() {
         const dist = parseFloat(document.getElementById('moatDistInput')?.value || 3);
         const depth = parseFloat(document.getElementById('moatDepthInput')?.value || 4);
         const water = parseFloat(document.getElementById('waterTableInput')?.value || 1.5);
-        const soilType = 'loam';
-
-        let data = null;
-        try {
-            const resp = await fetch(
-                `${API_BASE}/api/towers/${this.currentTower.tower_id}/moat?moat_distance=${dist}&moat_depth=${depth}&water_table_depth=${water}&soil_type=${soilType}`
-            );
-            const json = await resp.json();
-            if (json.code === 200) data = json.data;
-        } catch (e) {}
-
-        if (!data) data = this._generateMockMoatAnalysis(dist, depth, water);
-        this._renderMoatAnalysis(data);
-    }
-
-    _generateMockMoatAnalysis(dist, depth, water) {
-        const riskLevel = dist < 2 ? 5 : (dist < 4 ? 4 : (dist < 6 ? 3 : (dist < 10 ? 2 : 1)));
-        return {
+        const params = {
             moat_distance: dist,
             moat_depth: depth,
             water_table_depth: water,
             soil_type: 'loam',
-            foundation_stability: riskLevel <= 2 ? 'stable' : (riskLevel <= 3 ? 'warning' : 'danger'),
-            settlement_risk: riskLevel <= 2 ? 'low' : (riskLevel <= 3 ? 'medium' : 'high'),
-            lateral_pressure_ratio: (0.3 + (1 - dist / 20) * 0.5).toFixed(2),
-            safety_factor: (3.0 - riskLevel * 0.4).toFixed(2),
-            risk_level: riskLevel,
-            max_settlement: (depth * 2 + water * 3).toFixed(1),
-            recommendation: riskLevel >= 4 ? '建议远离护城河至少5m' : (riskLevel >= 3 ? '需加固地基' : '地基条件可接受'),
         };
+        const data = await this.foundationAnalyzer.analyze(params);
+        this._renderMoatAnalysis(data);
+        return data;
+    }
+
+    _generateMockMoatAnalysis(dist, depth, water) {
+        return this.foundationAnalyzer._generateMock({
+            moat_distance: dist, moat_depth: depth, water_table_depth: water, soil_type: 'loam',
+        });
     }
 
     _renderMoatAnalysis(data) {
         const container = document.getElementById('moatResult');
-        if (!container) return;
-
-        const riskLabels = ['', '极低', '低', '中等', '高', '极高'];
-        const riskLevel = data.risk_level || 1;
-
-        container.innerHTML = `
-            <div class="moat-summary">
-                <div class="moat-risk-badge risk-${riskLevel}">
-                    风险等级: ${riskLabels[riskLevel] || '未知'}
-                </div>
-                <div class="moat-stability-tag ${data.foundation_stability}">${data.foundation_stability === 'stable' ? '✓ 地基稳定' : (data.foundation_stability === 'warning' ? '⚠ 地基注意' : '✗ 地基危险')}</div>
-            </div>
-            <div class="moat-details">
-                <div class="moat-detail-row"><span>安全系数</span><span>${data.safety_factor}</span></div>
-                <div class="moat-detail-row"><span>侧压力比</span><span>${data.lateral_pressure_ratio}</span></div>
-                <div class="moat-detail-row"><span>最大沉降</span><span>${data.max_settlement} mm</span></div>
-                <div class="moat-detail-row"><span>沉降风险</span><span>${data.settlement_risk}</span></div>
-                <div class="moat-detail-row"><span>建议</span><span>${data.recommendation}</span></div>
-            </div>
-        `;
+        this.foundationAnalyzer.render(container, data);
     }
 
     async initClimbingExperience() {
-        let data = null;
-        try {
-            const resp = await fetch(`${API_BASE}/api/towers/${this.currentTower.tower_id}/climbing`);
-            const json = await resp.json();
-            if (json.code === 200) data = json.data;
-        } catch (e) {}
-
-        if (!data) data = this._generateMockClimbingData();
+        const data = await this.vrSiegeTower.load();
         this._climbingViewpoints = data.viewpoints || data;
         this.renderViewpointButtons(this._climbingViewpoints);
+        return data;
     }
 
     _generateMockClimbingData() {
-        const viewpoints = [];
-        const L = this.currentTower.total_layers;
-        const H = this.currentTower.total_height;
-        const layerH = H / L;
-        for (let i = 1; i <= L; i++) {
-            const y = i * layerH;
-            viewpoints.push({
-                layer: i,
-                name: `第${i}层`,
-                position: { x: 0, y: y, z: 3 },
-                look_at: { x: 0, y: y + layerH / 2, z: 0 },
-                description: `站在${this.currentTower.tower_name}第${i}层，高度${y.toFixed(1)}m`,
-            });
-        }
-        return { viewpoints };
+        return this.vrSiegeTower._generateMockExperience(this.currentTower.tower_id);
     }
 
     renderViewpointButtons(viewpoints) {
@@ -1107,11 +949,17 @@ export class StabilityPanel {
         for (const vp of viewpoints) {
             const btn = document.createElement('button');
             btn.className = 'viewpoint-btn';
-            btn.textContent = vp.name;
+            const risk = vp.acrophobia_risk_level || 1;
+            if (risk >= 4) btn.classList.add('risk-high');
+            else if (risk >= 3) btn.classList.add('risk-mid');
+
+            const name = vp.name || vp.layer_name || `L${vp.layer || vp.layer_id}`;
+            btn.innerHTML = `<span>${name}</span><small>R${risk}</small>`;
+            btn.title = vp.description || '';
             btn.addEventListener('click', () => {
                 this.enterClimbingMode(vp);
                 const info = document.getElementById('climbingInfo');
-                if (info) info.textContent = vp.name;
+                if (info) info.textContent = vp.name || vp.layer_name || '';
                 const desc = document.getElementById('climbingDesc');
                 if (desc) desc.textContent = vp.description || '';
             });
@@ -1121,80 +969,41 @@ export class StabilityPanel {
 
     enterClimbingMode(viewpoint) {
         this.climbingMode = true;
-        const viewer = this.tower3D?.viewer;
-        if (!viewer) return;
+        const normalized = this._normalizeViewpoint(viewpoint);
+        this.vrSiegeTower.enterClimbingMode(normalized);
+    }
 
-        if (!this.savedCameraState) {
-            this.savedCameraState = {
-                position: viewer.camera.position.clone(),
-                target: viewer.controls.target.clone(),
-                fov: viewer.camera.fov,
-            };
-        }
+    _normalizeViewpoint(vp) {
+        const hasCameraArray = Array.isArray(vp.camera_position);
+        const hasLookArray = Array.isArray(vp.look_at);
+        const hasPosObj = vp.position && typeof vp.position === 'object';
+        const hasLookObj = vp.look && typeof vp.look === 'object';
 
-        const pos = viewpoint.position;
-        const look = viewpoint.look_at;
-        const targetFov = viewpoint.recommended_fov_deg || 65;
-        const duration = viewpoint.transition_duration_ms || 1000;
-
-        const startPos = viewer.camera.position.clone();
-        const startFov = viewer.camera.fov;
-        const startTime = performance.now();
-
-        const animateTransition = (now) => {
-            const elapsed = now - startTime;
-            const t = Math.min(elapsed / duration, 1.0);
-            const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-
-            viewer.camera.position.lerpVectors(startPos, new THREE.Vector3(pos.x, pos.y, pos.z), ease);
-            viewer.camera.fov = startFov + (targetFov - startFov) * ease;
-            viewer.camera.lookAt(look.x, look.y, look.z);
-            viewer.camera.updateProjectionMatrix();
-
-            if (t < 1.0) {
-                requestAnimationFrame(animateTransition);
-            } else {
-                viewer.controls.enabled = false;
-            }
+        return {
+            layer_id: vp.layer_id || vp.layer || 1,
+            layer_name: vp.layer_name || vp.name || '',
+            camera_position: hasCameraArray
+                ? vp.camera_position
+                : hasPosObj
+                ? [vp.position.x, vp.position.y, vp.position.z]
+                : [0, 2, 5],
+            look_at: hasLookArray
+                ? vp.look_at
+                : hasLookObj
+                ? [vp.look.x, vp.look.y, vp.look.z]
+                : [0, 5, 20],
+            description: vp.description || '',
+            visibility_range_m: vp.visibility_range_m || 500,
+            strategic_value: vp.strategic_value || '',
+            height_above_ground_m: vp.height_above_ground_m ?? (hasPosObj ? vp.position.y : (Array.isArray(vp.camera_position) ? vp.camera_position[1] : 2)),
+            acrophobia_risk_level: vp.acrophobia_risk_level || 1,
+            recommended_fov_deg: vp.recommended_fov_deg || 75,
+            transition_duration_ms: vp.transition_duration_ms || 800,
         };
-
-        if (typeof THREE !== 'undefined') {
-            requestAnimationFrame(animateTransition);
-        } else {
-            viewer.camera.position.set(pos.x, pos.y, pos.z);
-            viewer.camera.lookAt(look.x, look.y, look.z);
-            viewer.controls.enabled = false;
-        }
-
-        const overlay = document.getElementById('climbingOverlay');
-        if (overlay) overlay.style.display = 'flex';
-
-        const heightWarning = document.getElementById('climbingHeightWarning');
-        if (heightWarning && viewpoint.acrophobia_risk_level >= 3) {
-            heightWarning.textContent = `⚠ 当前高度 ${viewpoint.height_above_ground_m?.toFixed(1) || ''}m，恐高风险等级 ${viewpoint.acrophobia_risk_level}/5`;
-            heightWarning.style.display = 'block';
-        } else if (heightWarning) {
-            heightWarning.style.display = 'none';
-        }
     }
 
     exitClimbingMode() {
         this.climbingMode = false;
-        const viewer = this.tower3D?.viewer;
-        if (viewer && this.savedCameraState) {
-            viewer.camera.position.copy(this.savedCameraState.position);
-            viewer.camera.fov = this.savedCameraState.fov || 75;
-            viewer.camera.updateProjectionMatrix();
-            viewer.controls.target.copy(this.savedCameraState.target);
-            viewer.controls.enabled = true;
-            viewer.controls.update();
-            this.savedCameraState = null;
-        }
-
-        const overlay = document.getElementById('climbingOverlay');
-        if (overlay) overlay.style.display = 'none';
-
-        const heightWarning = document.getElementById('climbingHeightWarning');
-        if (heightWarning) heightWarning.style.display = 'none';
+        this.vrSiegeTower.exitClimbingMode();
     }
 }

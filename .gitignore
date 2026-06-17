@@ -1,0 +1,80 @@
+# --- Node.js ---
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm
+
+# --- Java / Maven ---
+target
+*.class
+*.jar
+*.war
+.mvn/wrapper/maven-wrapper.jar
+
+# --- Python ---
+__pycache__
+*.pyc
+*.pyo
+.venv
+venv
+env
+.tox
+.pytest_cache
+
+# --- Rust ---
+backend/target
+backend/Cargo.lock.bak
+*.rs.bk
+
+# --- IDE / Editor ---
+.idea
+.vscode
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Project local ---
+.trae
+dist
+build
+.cache
+.output
+.nuxt
+.next
+coverage
+
+# --- Logs ---
+logs/
+*.log
+backend/all.log
+backend/server*.log
+backend/build*.txt
+backend/check_output.txt
+backend/cargo_check_output*.txt
+backend/quick_results.json
+backend/api_test*.json
+backend/api_test_results*.json
+backend/full_test_out.txt
+backend/regression_out.txt
+backend/test_result.txt
+backend/test11_result.json
+backend/test11_stdout.txt
+
+# --- Env ---
+.env
+.env.local
+.env.*.local
+
+# --- Docker volumes (local data) ---
+clickhouse/data/
+clickhouse/logs/
+mqtt/data/
+mqtt/logs/
+prometheus/data/
+grafana/data/
+
+# --- Docker ---
+docker-compose.override.yml

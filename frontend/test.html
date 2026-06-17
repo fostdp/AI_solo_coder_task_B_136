@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>攻城塔系统 - 功能测试</title>
+    <link rel="stylesheet" href="src/styles.css">
+    <style>
+        .test-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        .test-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .test-header h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        .test-header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .test-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .test-btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .test-btn-primary:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+        .test-btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        .test-btn-secondary:hover {
+            background: #cbd5e0;
+        }
+        .test-summary {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        .summary-stat {
+            text-align: center;
+        }
+        .summary-stat .number {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .summary-stat .label {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 4px;
+        }
+        .stat-passed .number { color: #38a169; }
+        .stat-failed .number { color: #e53e3e; }
+        .stat-total .number { color: #667eea; }
+        .test-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-icon {
+            font-size: 20px;
+        }
+        .test-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+        .test-item:hover {
+            background: #f7fafc;
+        }
+        .test-status {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .status-passed {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        .status-failed {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        .test-name {
+            flex: 1;
+            color: #2d3748;
+        }
+        .test-message {
+            color: #718096;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .test-item.failed {
+            background: #fff5f5;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .progress-bar {
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+            width: 0%;
+        }
+    </style>
+</head>
+<body class="test-body">
+    <div class="test-container">
+        <a href="index.html" class="back-link">← 返回主页面</a>
+        
+        <div class="test-header">
+            <h1>🏗️ 攻城塔新功能测试控制台</h1>
+            <p>朝代对比 · 跨时代对比 · 护城河分析 · 虚拟攀登体验</p>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        </div>
+
+        <div class="test-controls">
+            <button class="test-btn test-btn-primary" onclick="startAllTests()">▶ 运行全部测试</button>
+            <button class="test-btn test-btn-secondary" onclick="startBoundaryTests()">🧪 边界条件测试</button>
+            <button class="test-btn test-btn-secondary" onclick="clearResults()">🗑️ 清空结果</button>
+        </div>
+
+        <div class="test-summary" id="testSummary" style="display: none;">
+            <div class="summary-stat stat-total">
+                <div class="number" id="totalCount">0</div>
+                <div class="label">总测试数</div>
+            </div>
+            <div class="summary-stat stat-passed">
+                <div class="number" id="passedCount">0</div>
+                <div class="label">通过</div>
+            </div>
+            <div class="summary-stat stat-failed">
+                <div class="number" id="failedCount">0</div>
+                <div class="label">失败</div>
+            </div>
+        </div>
+
+        <div id="testResults"></div>
+    </div>
+
+    <script src="src/feature_tests.js"></script>
+    <script>
+        const testSections = {
+            dynasty: { title: '📐 朝代结构对比测试', icon: '📐' },
+            crossEra: { title: '⚔️ 跨时代对比测试', icon: '⚔️' },
+            moat: { title: '🏞️ 护城河地基分析测试', icon: '🏞️' },
+            climbing: { title: '🧗 虚拟攀登体验测试', icon: '🧗' },
+            selector: { title: '🎯 塔选择器测试', icon: '🎯' },
+            models: { title: '🖼️ 三维模型测试', icon: '🖼️' },
+            boundary: { title: '🧪 边界条件测试', icon: '🧪' }
+        };
+
+        function createSection(key) {
+            const section = testSections[key];
+            return `
+                <div class="test-section" id="section-${key}">
+                    <div class="section-title">
+                        <span class="section-icon">${section.icon}</span>
+                        ${section.title}
+                    </div>
+                    <div id="items-${key}"></div>
+                </div>
+            `;
+        }
+
+        function renderTestItem(sectionKey, test) {
+            const container = document.getElementById(`items-${sectionKey}`);
+            if (!container) return;
+
+            const statusClass = test.passed ? 'status-passed' : 'status-failed';
+            const statusIcon = test.passed ? '✓' : '✗';
+            const itemClass = test.passed ? '' : 'failed';
+
+            const item = document.createElement('div');
+            item.className = `test-item ${itemClass}`;
+            item.innerHTML = `
+                <div class="test-status ${statusClass}">${statusIcon}</div>
+                <div class="test-name">${test.name}</div>
+                <div class="test-message">${test.message}</div>
+            `;
+            container.appendChild(item);
+        }
+
+        function updateSummary(total, passed, failed) {
+            document.getElementById('testSummary').style.display = 'flex';
+            document.getElementById('totalCount').textContent = total;
+            document.getElementById('passedCount').textContent = passed;
+            document.getElementById('failedCount').textContent = failed;
+            
+            const progress = total > 0 ? (passed / total * 100) : 0;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        function clearResults() {
+            document.getElementById('testResults').innerHTML = '';
+            document.getElementById('testSummary').style.display = 'none';
+            document.getElementById('progressFill').style.width = '0%';
+        }
+
+        async function startAllTests() {
+            clearResults();
+            
+            const resultContainer = document.getElementById('testResults');
+            Object.keys(testSections).forEach(key => {
+                if (key !== 'boundary') {
+                    resultContainer.innerHTML += createSection(key);
+                }
+            });
+
+            const originalAssert = FeatureTestRunner.prototype.assert;
+            let currentSection = null;
+            const sectionMap = {
+                '朝代': 'dynasty',
+                '跨时代': 'crossEra',
+                '护城河': 'moat',
+                '攀登': 'climbing',
+                '塔选择器': 'selector',
+                '三维': 'models'
+            };
+
+            FeatureTestRunner.prototype.assert = function(condition, testName, message) {
+                const result = originalAssert.call(this, condition, testName, message);
+                
+                for (const [keyword, sectionKey] of Object.entries(sectionMap)) {
+                    if (testName.includes(keyword) || testName.includes(keyword.replace('测试', ''))) {
+                        if (currentSection !== sectionKey) {
+                            currentSection = sectionKey;
+                        }
+                        renderTestItem(sectionKey, {
+                            name: testName,
+                            passed: condition,
+                            message: message || (condition ? '通过' : '失败')
+                        });
+                        break;
+                    }
+                }
+
+                updateSummary(this.results.length, this.passed, this.failed);
+                return result;
+            };
+
+            try {
+                await runAllTests();
+            } catch (e) {
+                console.error('测试运行出错:', e);
+            }
+
+            FeatureTestRunner.prototype.assert = originalAssert;
+        }
+
+        async function startBoundaryTests() {
+            clearResults();
+            
+            const resultContainer = document.getElementById('testResults');
+            resultContainer.innerHTML += createSection('boundary');
+
+            const originalAssert = FeatureTestRunner.prototype.assert;
+            let testIndex = 0;
+
+            FeatureTestRunner.prototype.assert = function(condition, testName, message) {
+                const result = originalAssert.call(this, condition, testName, message);
+                
+                renderTestItem('boundary', {
+                    name: testName,
+                    passed: condition,
+                    message: message || (condition ? '通过' : '失败')
+                });
+
+                updateSummary(this.results.length, this.passed, this.failed);
+                return result;
+            };
+
+            try {
+                await runBoundaryTests();
+            } catch (e) {
+                console.error('边界测试运行出错:', e);
+            }
+
+            FeatureTestRunner.prototype.assert = originalAssert;
+        }
+
+        console.log('🧪 测试控制台已就绪。点击"运行全部测试"开始。');
+    </script>
+</body>
+</html>

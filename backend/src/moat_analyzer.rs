@@ -20,7 +20,7 @@ impl MoatAnalyzer {
         tilt_deg: f64,
     ) -> MoatAnalysis {
         let bearing_capacity_reduction =
-            1.0 - 0.5 * (water_table_depth / moat_depth).min(1.0);
+            0.5 + 0.5 * (water_table_depth / moat_depth).min(1.0);
 
         let base_bearing = soil_type.bearing_capacity_kpa();
         let effective_bearing_capacity = base_bearing * bearing_capacity_reduction;
@@ -200,5 +200,254 @@ impl MoatAnalyzer {
 impl Default for MoatAnalyzer {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::{SoilType, TowerMetadata};
+
+    fn test_tower() -> TowerMetadata {
+        TowerMetadata {
+            tower_id: 1,
+            tower_name: "测试塔".to_string(),
+            build_date: "2024-01-01".to_string(),
+            material: "松木".to_string(),
+            total_height: 15.0,
+            total_layers: 5,
+            base_width: 5.0,
+            base_depth: 5.0,
+            total_weight: 12.0,
+            design_load: 300.0,
+            design_wind_speed: 25.0,
+            material_strength: 40.0,
+            elastic_modulus: 10000.0,
+            poisson_ratio: 0.38,
+        }
+    }
+
+    fn analyzer() -> MoatAnalyzer {
+        MoatAnalyzer::new()
+    }
+
+    #[test]
+    fn test_bearing_capacity_reduction_normal() {
+        let tower = test_tower();
+        let soil = SoilType::Loam;
+        let result = analyzer().analyze(&tower, &soil, 5.0, 4.0, 2.0, 10.0, 0.0);
+
+        assert!(result.bearing_capacity_reduction > 0.0);
+        assert!(result.bearing_capacity_reduction <= 1.0);
+        assert_eq!(result.effective_bearing_capacity,
+            soil.bearing_capacity_kpa() * result.bearing_capacity_reduction);
+    }
+
+    #[test]
+    fn test_bearing_capacity_reduction_deep_water_table() {
+        let tower = test_tower();
+        let soil = SoilType::Sand;
+        let result = analyzer().analyze(&tower, &soil, 5.0, 4.0, 10.0, 10.0, 0.0);
+
+        assert_eq!(result.bearing_capacity_reduction, 1.0);
+    }
+
+    #[test]
+    fn test_bearing_capacity_reduction_shallow_water_table() {
+        let tower = test_tower();
+        let soil = SoilType::Clay;
+        let result = analyzer().analyze(&tower, &soil, 5.0, 4.0, 0.0, 10.0, 0.0);
+
+        assert!(result.bearing_capacity_reduction < 0.7);
+        assert!(result.bearing_capacity_reduction >= 0.5);
+    }
+
+    #[test]
+    fn test_slope_stability_normal() {
+        let tower = test_tower();
+        let soil = SoilType::Rock;
+        let result = analyzer().analyze(&tower, &soil, 5.0, 4.0, 2.0, 10.0, 0.0);
+
+        assert!(result.slope_stability_factor > 1.0);
+        assert!(result.slope_stability_factor <= 10.0);
+    }
+
+    #[test]
+    fn test_slope_stability_steep_slope() {
+        let tower = test_tower();
+        let soil = SoilType::Silt;
+        let result_close = analyzer().analyze(&tower, &soil, 1.0, 4.0, 2.0, 10.0, 0.0);
+        let result_far = analyzer().analyze(&tower, &soil, 10.0, 4.0, 2.0, 10.0, 0.0);
+
+        assert!(result_close.slope_stability_factor < result_far.slope_stability_factor);
+    }
+
+    #[test]
+    fn test_settlement_increase_sand_clay_difference() {
+        let tower = test_tower();
+        let sand_result = analyzer().analyze(&tower, &SoilType::Sand, 5.0, 4.0, 1.0, 10.0, 0.0);
+        let clay_result = analyzer().analyze(&tower, &SoilType::Clay, 5.0, 4.0, 1.0, 10.0, 0.0);
+
+        assert!(clay_result.settlement_increase_pct > sand_result.settlement_increase_pct);
+        assert!(sand_result.settlement_increase_pct >= 20.0);
+        assert!(clay_result.settlement_increase_pct <= 80.0);
+    }
+
+    #[test]
+    fn test_settlement_increase_zero_water_table() {
+        let tower = test_tower();
+        let result = analyzer().analyze(&tower, &SoilType::Loam, 5.0, 4.0, 4.0, 10.0, 0.0);
+
+        assert!(result.settlement_increase_pct < 50.0);
+    }
+
+    #[test]
+    fn test_lateral_displacement_increases_with_wind() {
+        let tower = test_tower();
+        let soil = SoilType::Loam;
+        let result_calm = analyzer().analyze(&tower, &soil, 5.0, 4.0, 2.0, 5.0, 0.0);
+        let result_storm = analyzer().analyze(&tower, &soil, 5.0, 4.0, 2.0, 30.0, 0.0);
+
+        assert!(result_storm.lateral_displacement_mm >= result_calm.lateral_displacement_mm);
+        assert!(result_storm.lateral_displacement_mm > 0.0);
+    }
+
+    #[test]
+    fn test_lateral_displacement_increases_with_tilt() {
+        let tower = test_tower();
+        let soil = SoilType::Loam;
+        let result_straight = analyzer().analyze(&tower, &soil, 5.0, 4.0, 2.0, 10.0, 0.0);
+        let result_tilted = analyzer().analyze(&tower, &soil, 5.0, 4.0, 2.0, 10.0, 3.0);
+
+        assert!(result_tilted.lateral_displacement_mm >= result_straight.lateral_displacement_mm);
+    }
+
+    #[test]
+    fn test_overall_safety_factor_valid_range() {
+        let tower = test_tower();
+        let soil = SoilType::Loam;
+        let result = analyzer().analyze(&tower, &soil, 5.0, 4.0, 2.0, 10.0, 0.0);
+
+        let applied_pressure = tower.total_weight * 9.81 / (tower.base_width * tower.base_depth);
+        let bearing_sf = result.effective_bearing_capacity / applied_pressure.max(0.1);
+
+        assert!(result.overall_safety_factor > 0.0);
+        assert!(result.overall_safety_factor <= bearing_sf);
+        assert!(result.overall_safety_factor <= result.slope_stability_factor);
+    }
+
+    #[test]
+    fn test_risk_level_mapping() {
+        let tower = test_tower();
+
+        let rock_result = analyzer().analyze(&tower, &SoilType::Rock, 10.0, 4.0, 10.0, 5.0, 0.0);
+        assert!(rock_result.risk_level >= 1);
+        assert!(rock_result.risk_level <= 5);
+
+        let clay_close_result = analyzer().analyze(&tower, &SoilType::Clay, 1.0, 10.0, 0.0, 30.0, 5.0);
+        assert!(clay_close_result.risk_level >= 1);
+        assert!(clay_close_result.risk_level <= 5);
+    }
+
+    #[test]
+    fn test_risk_level_monotonic_with_sf() {
+        let tower = test_tower();
+        let soil = SoilType::Silt;
+
+        let result_safe = analyzer().analyze(&tower, &soil, 10.0, 2.0, 10.0, 5.0, 0.0);
+        let result_unsafe = analyzer().analyze(&tower, &soil, 1.0, 10.0, 0.0, 40.0, 5.0);
+
+        assert!(result_safe.risk_level <= result_unsafe.risk_level);
+    }
+
+    #[test]
+    fn test_recommendations_not_empty() {
+        let tower = test_tower();
+        let soil = SoilType::Loam;
+        let result = analyzer().analyze(&tower, &soil, 5.0, 4.0, 2.0, 10.0, 0.0);
+
+        assert!(!result.recommendations.is_empty());
+    }
+
+    #[test]
+    fn test_recommendations_for_risky_situation() {
+        let tower = test_tower();
+        let soil = SoilType::Clay;
+        let result = analyzer().analyze(&tower, &soil, 2.0, 8.0, 0.5, 35.0, 4.0);
+
+        let rec_texts: Vec<&str> = result.recommendations.iter().map(|s| s.as_str()).collect();
+        let has_moat_warning = rec_texts.iter().any(|r| r.contains("护城河") || r.contains("安全距离"));
+        let has_safety_warning = result.overall_safety_factor < 1.5 &&
+            rec_texts.iter().any(|r| r.contains("安全系数"));
+
+        assert!(has_moat_warning || result.moat_distance_m >= 5.0);
+        if result.overall_safety_factor < 1.5 {
+            assert!(has_safety_warning);
+        }
+    }
+
+    #[test]
+    fn test_soil_types_all_supported() {
+        let tower = test_tower();
+        let soils = vec![
+            SoilType::Sand,
+            SoilType::Clay,
+            SoilType::Silt,
+            SoilType::Rock,
+            SoilType::Loam,
+        ];
+
+        for soil in soils {
+            let result = analyzer().analyze(&tower, &soil, 5.0, 4.0, 2.0, 10.0, 0.0);
+            assert!(result.overall_safety_factor > 0.0);
+            assert!(!result.soil_type.is_empty());
+            assert_eq!(result.soil_type, soil.as_str());
+        }
+    }
+
+    #[test]
+    fn test_boundary_zero_moat_distance() {
+        let tower = test_tower();
+        let soil = SoilType::Sand;
+        let result = analyzer().analyze(&tower, &soil, 0.1, 4.0, 2.0, 10.0, 0.0);
+
+        assert!(result.slope_stability_factor > 0.0);
+        assert!(result.overall_safety_factor > 0.0);
+    }
+
+    #[test]
+    fn test_boundary_zero_wind() {
+        let tower = test_tower();
+        let soil = SoilType::Loam;
+        let result = analyzer().analyze(&tower, &soil, 5.0, 4.0, 2.0, 0.0, 0.0);
+
+        assert!(result.lateral_displacement_mm >= 0.0);
+    }
+
+    #[test]
+    fn test_boundary_zero_tilt() {
+        let tower = test_tower();
+        let soil = SoilType::Loam;
+        let result = analyzer().analyze(&tower, &soil, 5.0, 4.0, 2.0, 10.0, 0.0);
+
+        assert!(result.overall_safety_factor > 0.0);
+    }
+
+    #[test]
+    fn test_timestamp_present() {
+        let tower = test_tower();
+        let soil = SoilType::Loam;
+        let result = analyzer().analyze(&tower, &soil, 5.0, 4.0, 2.0, 10.0, 0.0);
+
+        assert!(result.timestamp.timestamp() > 0);
+    }
+
+    #[test]
+    fn test_large_moat_distance_stable() {
+        let tower = test_tower();
+        let soil = SoilType::Rock;
+        let result = analyzer().analyze(&tower, &soil, 100.0, 4.0, 10.0, 10.0, 0.0);
+
+        assert!(result.overall_safety_factor > 2.0);
     }
 }

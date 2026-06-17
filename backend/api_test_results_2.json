@@ -1,0 +1,56 @@
+[
+  {
+    "name": "6.PostAnalysis",
+    "method": "POST",
+    "path": "/api/towers/1/analysis",
+    "status": 200,
+    "time_ms": 4396,
+    "result": "PASS",
+    "response": "{\"code\":200,\"message\":\"success\",\"data\":{\"records\":5,\"status\":\"simulated\",\"tilt_deg\":2.0,\"timestamp\":\"2026-06-17T00:15:03.995154500+00:00\",\"tower_id\":1,\"wind_speed\":25.0},\"timestamp\":\"2026-06-17T00:15:03.995176400+00:00\"}"
+  },
+  {
+    "name": "7.GetAnalysis",
+    "method": "GET",
+    "path": "/api/towers/1/analysis",
+    "status": 404,
+    "time_ms": 2034,
+    "result": "FAIL",
+    "response": "HTTP Error 404: Not Found"
+  },
+  {
+    "name": "8.AnalysisStructure",
+    "method": "GET",
+    "path": "/api/towers/1/analysis/structure",
+    "status": 200,
+    "time_ms": 89489,
+    "result": "PASS",
+    "response": "{\"code\":200,\"message\":\"success\",\"data\":{\"analysis\":{\"critical_stress\":45.0,\"current_wind_factor\":20.47324821607675,\"damping_ratio\":0.03900000000000001,\"ground_capacity_ratio\":0.8,\"is_stable\":0,\"max_stress\":39.27580822458894,\"max_stress_layer\":5,\"max_tilt\":0.9,\"max_tilt_layer\":5,\"natural_frequency\":0.03449056859307769,\"safety_factor\":1.1135714362541174,\"second_order_effect\":1.0143425650215503,\"stability_margin\":-100.0,\"timestamp\":\"2026-06-17T00:15:51.887538500Z\",\"tower_id\":1,\"tower_name\":\"临冲吕公车-一"
+  },
+  {
+    "name": "9.Ground",
+    "method": "GET",
+    "path": "/api/towers/1/ground",
+    "status": 200,
+    "time_ms": 8033,
+    "result": "PASS",
+    "response": "{\"code\":200,\"message\":\"success\",\"data\":[{\"timestamp\":\"2026-06-17T00:16:41.876509Z\",\"tower_id\":1,\"soil_type\":\"rock\",\"bearing_capacity\":31823887.64035829,\"applied_pressure\":10.342583499355014,\"safety_factor\":10.0,\"settlement\":0.10174940773560218,\"differential_settlement\":12.53052482232068,\"passability_score\":100.0,\"can_pass\":1,\"risk_level\":1},{\"timestamp\":\"2026-06-17T00:16:41.876517Z\",\"tower_id\":1,\"soil_type\":\"loam\",\"bearing_capacity\":16697.124196855028,\"applied_pressure\":10.342583499355014,\"safet"
+  },
+  {
+    "name": "10.Alerts",
+    "method": "GET",
+    "path": "/api/towers/1/alerts",
+    "status": 200,
+    "time_ms": 2032,
+    "result": "PASS",
+    "response": "{\"code\":200,\"message\":\"success\",\"data\":[],\"timestamp\":\"2026-06-17T00:16:49.589605600+00:00\"}"
+  },
+  {
+    "name": "11.FullAnalysis",
+    "method": "GET",
+    "path": "/api/towers/1/analysis/full",
+    "status": 200,
+    "time_ms": 19508,
+    "result": "PASS",
+    "response": "{\"code\":200,\"message\":\"success\",\"data\":{\"fem_sample\":[{\"displacement_total\":0.0,\"displacement_x\":0.0,\"displacement_y\":0.0,\"displacement_z\":0.0,\"layer_id\":1,\"node_id\":0,\"node_x\":-3.1,\"node_y\":-2.4,\"node_z\":0.0,\"plastic_strain\":0.023949717720966893,\"stress_xx\":2.0,\"stress_xy\":0.3,\"stress_yy\":1.6,\"stress_yz\":0.2,\"stress_zx\":0.25,\"stress_zz\":90.0,\"timestamp\":\"2026-06-17T00:17:07.766039400Z\",\"tower_id\":1,\"von_mises\":152.77372974435102},{\"displacement_total\":0.0,\"displacement_x\":0.0,\"displacement_y\":0"
+  }
+]

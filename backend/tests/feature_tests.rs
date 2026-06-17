@@ -114,15 +114,15 @@ fn make_sensors(n: u8, base_stress: f64, base_tilt: f64, wind: f64, ground: f64)
 
 fn dynasty_towers() -> Vec<TowerMetadata> {
     vec![
-        make_tower(1, "临冲吕公车", 15.0, 5, 5.0, 5.0, 12.0, 40.0, 10000.0, 0.38, 300.0, 25.0),
-        make_tower(2, "望楼车", 18.0, 6, 4.5, 4.5, 10.0, 35.0, 9500.0, 0.39, 200.0, 22.0),
-        make_tower(3, "云梯车", 12.0, 3, 3.5, 2.8, 8.5, 35.0, 9000.0, 0.40, 280.0, 25.0),
-        make_tower(4, "冲车", 5.5, 2, 4.2, 3.0, 15.0, 50.0, 11000.0, 0.37, 450.0, 20.0),
+        make_tower(1, "临冲吕公车", 18.5, 5, 6.2, 4.8, 28.5, 38.0, 9500.0, 0.35, 850.0, 35.0),
+        make_tower(2, "临冲吕公车-二号", 21.0, 6, 6.8, 5.2, 36.8, 44.0, 12000.0, 0.35, 1020.0, 40.0),
+        make_tower(3, "云梯车", 12.0, 3, 3.5, 2.8, 8.5, 36.0, 10500.0, 0.35, 280.0, 25.0),
+        make_tower(4, "冲车", 5.5, 2, 4.2, 3.0, 15.0, 48.0, 13800.0, 0.35, 450.0, 20.0),
     ]
 }
 
 fn modern_tower() -> TowerMetadata {
-    make_tower(5, "现代塔吊", 60.0, 12, 8.0, 8.0, 85.0, 345.0, 206000.0, 0.30, 6000.0, 55.0)
+    make_tower(5, "现代塔吊", 60.0, 12, 8.0, 8.0, 95.0, 295.0, 206000.0, 0.30, 8000.0, 55.0)
 }
 
 #[test]
@@ -457,6 +457,10 @@ fn generate_climbing_viewpoints(tower: &TowerMetadata) -> Vec<ClimbingViewpoint>
         let height_ratio = (i as f64 + 1.0) / tower.total_layers as f64;
         let visibility = 500.0 + height_ratio * 1500.0;
 
+        let acrophobia_risk_level = if y < 5.0 { 1 } else if y < 10.0 { 2 } else if y < 20.0 { 3 } else if y < 35.0 { 4 } else { 5 };
+        let recommended_fov_deg = if acrophobia_risk_level <= 2 { 75.0 } else if acrophobia_risk_level == 3 { 65.0 } else if acrophobia_risk_level == 4 { 55.0 } else { 45.0 };
+        let transition_duration_ms = if acrophobia_risk_level <= 2 { 500 } else if acrophobia_risk_level == 3 { 1000 } else if acrophobia_risk_level == 4 { 1500 } else { 2000 };
+
         let description = if height_ratio < 0.33 {
             format!("第{}层：基层作战区，士兵集结与装备存放", layer_id)
         } else if height_ratio < 0.66 {
@@ -481,6 +485,10 @@ fn generate_climbing_viewpoints(tower: &TowerMetadata) -> Vec<ClimbingViewpoint>
             description,
             visibility_range_m: visibility,
             strategic_value: strategic_value.to_string(),
+            height_above_ground_m: y,
+            acrophobia_risk_level,
+            recommended_fov_deg,
+            transition_duration_ms,
         });
     }
 
@@ -495,4 +503,77 @@ fn generate_climbing_experience(tower: &TowerMetadata) -> ClimbingExperience {
         total_height: tower.total_height,
         battlefield_description: "古代战场场景：城墙、护城河、敌楼、兵营、攻城器械阵列".to_string(),
     }
+}
+
+#[test]
+fn test_feature_climbing_acrophobia_risk_increases_with_height() {
+    let tower = modern_tower();
+    let viewpoints = generate_climbing_viewpoints(&tower);
+
+    for i in 1..viewpoints.len() {
+        assert!(viewpoints[i].acrophobia_risk_level >= viewpoints[i-1].acrophobia_risk_level);
+    }
+    assert!(viewpoints.last().unwrap().acrophobia_risk_level >= 3);
+}
+
+#[test]
+fn test_feature_climbing_fov_decreases_with_height() {
+    let tower = modern_tower();
+    let viewpoints = generate_climbing_viewpoints(&tower);
+
+    for vp in &viewpoints {
+        assert!(vp.recommended_fov_deg >= 45.0);
+        assert!(vp.recommended_fov_deg <= 75.0);
+    }
+
+    let high_viewpoints: Vec<_> = viewpoints.iter().filter(|v| v.acrophobia_risk_level >= 4).collect();
+    let low_viewpoints: Vec<_> = viewpoints.iter().filter(|v| v.acrophobia_risk_level <= 2).collect();
+    if !high_viewpoints.is_empty() && !low_viewpoints.is_empty() {
+        assert!(high_viewpoints[0].recommended_fov_deg < low_viewpoints[0].recommended_fov_deg);
+    }
+}
+
+#[test]
+fn test_feature_climbing_transition_duration_increases_with_height() {
+    let tower = modern_tower();
+    let viewpoints = generate_climbing_viewpoints(&tower);
+
+    for vp in &viewpoints {
+        assert!(vp.transition_duration_ms >= 500);
+        assert!(vp.transition_duration_ms <= 2000);
+    }
+
+    for i in 1..viewpoints.len() {
+        if viewpoints[i].acrophobia_risk_level > viewpoints[i-1].acrophobia_risk_level {
+            assert!(viewpoints[i].transition_duration_ms >= viewpoints[i-1].transition_duration_ms);
+        }
+    }
+}
+
+#[test]
+fn test_feature_moat_water_soil_coupling() {
+    let analyzer = MoatAnalyzer::new();
+    let tower = dynasty_towers().remove(0);
+
+    let dry = analyzer.analyze(&tower, &SoilType::Loam, 5.0, 4.0, 10.0, 10.0, 0.0);
+    let wet = analyzer.analyze(&tower, &SoilType::Loam, 5.0, 4.0, 0.0, 10.0, 0.0);
+
+    assert!(dry.pore_pressure_ratio < wet.pore_pressure_ratio);
+    assert!(dry.water_soil_coupling_factor > wet.water_soil_coupling_factor);
+    assert!(wet.pore_pressure_ratio >= 0.0);
+    assert!(wet.pore_pressure_ratio <= 0.5);
+    assert!(dry.water_soil_coupling_factor >= 0.5);
+    assert!(dry.water_soil_coupling_factor <= 1.0);
+}
+
+#[test]
+fn test_feature_moat_seepage_force_present() {
+    let analyzer = MoatAnalyzer::new();
+    let tower = dynasty_towers().remove(0);
+
+    let with_water = analyzer.analyze(&tower, &SoilType::Sand, 5.0, 4.0, 0.0, 10.0, 0.0);
+    let no_water = analyzer.analyze(&tower, &SoilType::Sand, 5.0, 4.0, 10.0, 10.0, 0.0);
+
+    assert!(with_water.seepage_force_kn >= 0.0);
+    assert!(no_water.seepage_force_kn <= with_water.seepage_force_kn);
 }

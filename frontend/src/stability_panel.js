@@ -7,38 +7,38 @@ const API_BASE = '';
 const DEFAULT_TOWERS = {
     1: {
         tower_id: 1, tower_name: '临冲吕公车-一号', build_date: '1450-03-15',
-        material: '松木+铁木', total_height: 18.5, total_layers: 5,
+        material: '杉木+铁木', total_height: 18.5, total_layers: 5,
         base_width: 6.2, base_depth: 4.8, total_weight: 28.5,
         design_load: 850.0, design_wind_speed: 35.0,
-        material_strength: 45.0, elastic_modulus: 12000.0, poisson_ratio: 0.38,
+        material_strength: 38.0, elastic_modulus: 9500.0, poisson_ratio: 0.35,
     },
     2: {
         tower_id: 2, tower_name: '临冲吕公车-二号', build_date: '1452-07-22',
         material: '柏木+楠木', total_height: 21.0, total_layers: 6,
         base_width: 6.8, base_depth: 5.2, total_weight: 36.8,
         design_load: 1020.0, design_wind_speed: 40.0,
-        material_strength: 52.0, elastic_modulus: 13500.0, poisson_ratio: 0.36,
+        material_strength: 44.0, elastic_modulus: 12000.0, poisson_ratio: 0.35,
     },
     3: {
         tower_id: 3, tower_name: '云梯车', build_date: '1368-05-10',
         material: '松木+竹', total_height: 12.0, total_layers: 3,
         base_width: 3.5, base_depth: 2.8, total_weight: 8.5,
         design_load: 280.0, design_wind_speed: 25.0,
-        material_strength: 35.0, elastic_modulus: 9000.0, poisson_ratio: 0.40,
+        material_strength: 36.0, elastic_modulus: 10500.0, poisson_ratio: 0.35,
     },
     4: {
-        tower_id: 4, tower_name: '冲车', build_date: '-300-01-01',
-        material: '硬木+铁箍', total_height: 5.5, total_layers: 2,
+        tower_id: 4, tower_name: '冲车', build_date: '0230-01-01',
+        material: '栎木+铁箍', total_height: 5.5, total_layers: 2,
         base_width: 4.2, base_depth: 3.0, total_weight: 15.0,
         design_load: 450.0, design_wind_speed: 20.0,
-        material_strength: 50.0, elastic_modulus: 11000.0, poisson_ratio: 0.37,
+        material_strength: 48.0, elastic_modulus: 13800.0, poisson_ratio: 0.35,
     },
     5: {
         tower_id: 5, tower_name: '现代塔吊', build_date: '2024-01-15',
-        material: 'Q345B钢材', total_height: 60.0, total_layers: 12,
-        base_width: 8.0, base_depth: 8.0, total_weight: 85.0,
-        design_load: 6000.0, design_wind_speed: 55.0,
-        material_strength: 345.0, elastic_modulus: 206000.0, poisson_ratio: 0.30,
+        material: 'Q345B钢材(GB/T1591)', total_height: 60.0, total_layers: 12,
+        base_width: 8.0, base_depth: 8.0, total_weight: 95.0,
+        design_load: 8000.0, design_wind_speed: 55.0,
+        material_strength: 295.0, elastic_modulus: 206000.0, poisson_ratio: 0.30,
     },
 };
 
@@ -1128,17 +1128,54 @@ export class StabilityPanel {
             this.savedCameraState = {
                 position: viewer.camera.position.clone(),
                 target: viewer.controls.target.clone(),
+                fov: viewer.camera.fov,
             };
         }
 
         const pos = viewpoint.position;
         const look = viewpoint.look_at;
-        viewer.camera.position.set(pos.x, pos.y, pos.z);
-        viewer.camera.lookAt(look.x, look.y, look.z);
-        viewer.controls.enabled = false;
+        const targetFov = viewpoint.recommended_fov_deg || 65;
+        const duration = viewpoint.transition_duration_ms || 1000;
+
+        const startPos = viewer.camera.position.clone();
+        const startFov = viewer.camera.fov;
+        const startTime = performance.now();
+
+        const animateTransition = (now) => {
+            const elapsed = now - startTime;
+            const t = Math.min(elapsed / duration, 1.0);
+            const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+            viewer.camera.position.lerpVectors(startPos, new THREE.Vector3(pos.x, pos.y, pos.z), ease);
+            viewer.camera.fov = startFov + (targetFov - startFov) * ease;
+            viewer.camera.lookAt(look.x, look.y, look.z);
+            viewer.camera.updateProjectionMatrix();
+
+            if (t < 1.0) {
+                requestAnimationFrame(animateTransition);
+            } else {
+                viewer.controls.enabled = false;
+            }
+        };
+
+        if (typeof THREE !== 'undefined') {
+            requestAnimationFrame(animateTransition);
+        } else {
+            viewer.camera.position.set(pos.x, pos.y, pos.z);
+            viewer.camera.lookAt(look.x, look.y, look.z);
+            viewer.controls.enabled = false;
+        }
 
         const overlay = document.getElementById('climbingOverlay');
         if (overlay) overlay.style.display = 'flex';
+
+        const heightWarning = document.getElementById('climbingHeightWarning');
+        if (heightWarning && viewpoint.acrophobia_risk_level >= 3) {
+            heightWarning.textContent = `⚠ 当前高度 ${viewpoint.height_above_ground_m?.toFixed(1) || ''}m，恐高风险等级 ${viewpoint.acrophobia_risk_level}/5`;
+            heightWarning.style.display = 'block';
+        } else if (heightWarning) {
+            heightWarning.style.display = 'none';
+        }
     }
 
     exitClimbingMode() {
@@ -1146,6 +1183,8 @@ export class StabilityPanel {
         const viewer = this.tower3D?.viewer;
         if (viewer && this.savedCameraState) {
             viewer.camera.position.copy(this.savedCameraState.position);
+            viewer.camera.fov = this.savedCameraState.fov || 75;
+            viewer.camera.updateProjectionMatrix();
             viewer.controls.target.copy(this.savedCameraState.target);
             viewer.controls.enabled = true;
             viewer.controls.update();
@@ -1154,5 +1193,8 @@ export class StabilityPanel {
 
         const overlay = document.getElementById('climbingOverlay');
         if (overlay) overlay.style.display = 'none';
+
+        const heightWarning = document.getElementById('climbingHeightWarning');
+        if (heightWarning) heightWarning.style.display = 'none';
     }
 }

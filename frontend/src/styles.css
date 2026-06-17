@@ -933,6 +933,20 @@ body {
     border-radius: 6px;
     border: 1px solid var(--border);
 }
+.climbing-height-warning {
+    font-size: 12px;
+    color: #f59e0b;
+    font-weight: 600;
+    padding: 4px 12px;
+    background: rgba(245, 158, 11, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    animation: pulse-warning 2s ease-in-out infinite;
+}
+@keyframes pulse-warning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
 .climbing-viewpoints {
     position: absolute;
     left: 16px;

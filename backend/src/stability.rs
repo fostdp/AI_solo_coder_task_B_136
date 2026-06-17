@@ -249,18 +249,18 @@ mod tests {
         TowerMetadata {
             tower_id: 1,
             tower_name: "临冲吕公车".to_string(),
-            build_date: "1363-01-01".to_string(),
-            material: "杉木".to_string(),
-            total_height: 15.0,
+            build_date: "1450-03-15".to_string(),
+            material: "杉木+铁木".to_string(),
+            total_height: 18.5,
             total_layers: 5,
-            base_width: 5.0,
-            base_depth: 5.0,
-            total_weight: 12.0,
-            design_load: 300.0,
-            design_wind_speed: 25.0,
-            material_strength: 40.0,
-            elastic_modulus: 10000.0,
-            poisson_ratio: 0.38,
+            base_width: 6.2,
+            base_depth: 4.8,
+            total_weight: 28.5,
+            design_load: 850.0,
+            design_wind_speed: 35.0,
+            material_strength: 38.0,
+            elastic_modulus: 9500.0,
+            poisson_ratio: 0.35,
         }
     }
 
@@ -277,9 +277,9 @@ mod tests {
             total_weight: 8.5,
             design_load: 280.0,
             design_wind_speed: 25.0,
-            material_strength: 35.0,
-            elastic_modulus: 9000.0,
-            poisson_ratio: 0.40,
+            material_strength: 36.0,
+            elastic_modulus: 10500.0,
+            poisson_ratio: 0.35,
         }
     }
 
@@ -287,8 +287,8 @@ mod tests {
         TowerMetadata {
             tower_id: 4,
             tower_name: "冲车".to_string(),
-            build_date: "-300-01-01".to_string(),
-            material: "硬木+铁箍".to_string(),
+            build_date: "0230-01-01".to_string(),
+            material: "栎木+铁箍".to_string(),
             total_height: 5.5,
             total_layers: 2,
             base_width: 4.2,
@@ -296,9 +296,9 @@ mod tests {
             total_weight: 15.0,
             design_load: 450.0,
             design_wind_speed: 20.0,
-            material_strength: 50.0,
-            elastic_modulus: 11000.0,
-            poisson_ratio: 0.37,
+            material_strength: 48.0,
+            elastic_modulus: 13800.0,
+            poisson_ratio: 0.35,
         }
     }
 
@@ -307,15 +307,15 @@ mod tests {
             tower_id: 5,
             tower_name: "现代塔吊".to_string(),
             build_date: "2024-01-15".to_string(),
-            material: "Q345B钢材".to_string(),
+            material: "Q345B钢材(GB/T1591)".to_string(),
             total_height: 60.0,
             total_layers: 12,
             base_width: 8.0,
             base_depth: 8.0,
-            total_weight: 85.0,
-            design_load: 6000.0,
+            total_weight: 95.0,
+            design_load: 8000.0,
             design_wind_speed: 55.0,
-            material_strength: 345.0,
+            material_strength: 295.0,
             elastic_modulus: 206000.0,
             poisson_ratio: 0.30,
         }

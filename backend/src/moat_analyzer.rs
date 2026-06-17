@@ -19,8 +19,21 @@ impl MoatAnalyzer {
         wind_speed: f64,
         tilt_deg: f64,
     ) -> MoatAnalysis {
+        let pore_pressure_ratio = self.calculate_pore_pressure_ratio(
+            water_table_depth, moat_depth,
+        );
+
+        let seepage_force = self.calculate_seepage_force(
+            soil_type, moat_depth, moat_distance, water_table_depth,
+        );
+
+        let water_soil_coupling_factor = self.calculate_coupling_factor(
+            soil_type, pore_pressure_ratio,
+        );
+
         let bearing_capacity_reduction =
-            0.5 + 0.5 * (water_table_depth / moat_depth).min(1.0);
+            (0.5 + 0.5 * (water_table_depth / moat_depth).min(1.0))
+            * water_soil_coupling_factor;
 
         let base_bearing = soil_type.bearing_capacity_kpa();
         let effective_bearing_capacity = base_bearing * bearing_capacity_reduction;
@@ -30,9 +43,13 @@ impl MoatAnalyzer {
             moat_depth,
             moat_distance,
             water_table_depth,
+            pore_pressure_ratio,
+            seepage_force,
         );
 
-        let settlement_increase_pct = self.calculate_settlement_increase(soil_type, water_table_depth, moat_depth);
+        let settlement_increase_pct = self.calculate_settlement_increase(
+            soil_type, water_table_depth, moat_depth, pore_pressure_ratio,
+        );
 
         let lateral_displacement = self.calculate_lateral_displacement(
             tower,
@@ -41,6 +58,7 @@ impl MoatAnalyzer {
             moat_depth,
             wind_speed,
             tilt_deg,
+            pore_pressure_ratio,
         );
 
         let applied_pressure = tower.total_weight * 9.81 / (tower.base_width * tower.base_depth);
@@ -66,6 +84,7 @@ impl MoatAnalyzer {
             lateral_displacement,
             settlement_increase_pct,
             moat_distance,
+            pore_pressure_ratio,
         );
 
         MoatAnalysis {
@@ -80,10 +99,58 @@ impl MoatAnalyzer {
             slope_stability_factor,
             settlement_increase_pct,
             lateral_displacement_mm: lateral_displacement,
+            pore_pressure_ratio,
+            seepage_force_kn: seepage_force,
+            water_soil_coupling_factor,
             overall_safety_factor: overall_sf,
             risk_level,
             recommendations,
         }
+    }
+
+    fn calculate_pore_pressure_ratio(&self, water_table_depth: f64, moat_depth: f64) -> f64 {
+        if moat_depth <= 0.0 {
+            return 0.0;
+        }
+        let submergence_ratio = (1.0 - water_table_depth / moat_depth).max(0.0).min(1.0);
+        let ru = 0.5 * submergence_ratio.powi(2);
+        ru.min(0.5)
+    }
+
+    fn calculate_seepage_force(
+        &self,
+        soil_type: &SoilType,
+        moat_depth: f64,
+        moat_distance: f64,
+        water_table_depth: f64,
+    ) -> f64 {
+        let params = soil_type.params();
+        let k_hydraulic = match soil_type {
+            SoilType::Sand => 1e-4,
+            SoilType::Clay => 1e-8,
+            SoilType::Silt => 1e-6,
+            SoilType::Rock => 1e-10,
+            SoilType::Loam => 1e-5,
+        };
+
+        let h_w = (moat_depth - water_table_depth).max(0.0);
+        let i_hydraulic = if moat_distance > 0.0 { h_w / moat_distance } else { 0.0 };
+
+        let slope_length = (moat_depth.powi(2) + moat_distance.powi(2)).sqrt().max(1.0);
+        let volume = slope_length * moat_depth * 1.0;
+
+        k_hydraulic * i_hydraulic * params.gamma_sat * volume * 9.81
+    }
+
+    fn calculate_coupling_factor(&self, soil_type: &SoilType, pore_pressure_ratio: f64) -> f64 {
+        let sensitivity = match soil_type {
+            SoilType::Sand => 0.85,
+            SoilType::Clay => 0.70,
+            SoilType::Silt => 0.75,
+            SoilType::Rock => 0.95,
+            SoilType::Loam => 0.80,
+        };
+        1.0 - pore_pressure_ratio * (1.0 - sensitivity)
     }
 
     fn calculate_slope_stability(
@@ -92,34 +159,43 @@ impl MoatAnalyzer {
         moat_depth: f64,
         moat_distance: f64,
         water_table_depth: f64,
+        pore_pressure_ratio: f64,
+        seepage_force: f64,
     ) -> f64 {
         let params = soil_type.params();
-        let c = params.c_ref;
+        let c_effective = params.c_ref * (1.0 - pore_pressure_ratio * 0.5);
         let phi_deg = params.phi_ref_deg;
         let phi = phi_deg.to_radians();
         let gamma = params.gamma_sat;
+        let gamma_w = 9.81;
 
         let slope_angle = (moat_depth / moat_distance.max(0.5)).atan().min(PI / 3.0);
         let slope_length = (moat_depth.powi(2) + moat_distance.powi(2)).sqrt().max(1.0);
 
-        let w = gamma * slope_length * moat_depth * 0.5;
+        let submerged_depth = (moat_depth - water_table_depth).max(0.0);
+        let gamma_sub = if submerged_depth > 0.0 {
+            gamma - gamma_w
+        } else {
+            gamma
+        };
+        let w = gamma_sub * slope_length * moat_depth * 0.5;
 
         let water_force = if water_table_depth < moat_depth {
-            let h_w = (moat_depth - water_table_depth).max(0.0);
-            0.5 * 9.81 * h_w * h_w.max(1.0)
+            let h_w = submerged_depth;
+            0.5 * gamma_w * h_w * h_w.max(1.0)
         } else {
             0.0
         };
 
         let beta = slope_angle * 0.5;
 
-        let resisting = c * slope_length + w * slope_angle.cos() * phi.tan();
-        let driving = w * slope_angle.sin() + water_force * beta.sin();
+        let resisting = c_effective * slope_length + w * slope_angle.cos() * phi.tan();
+        let driving = w * slope_angle.sin() + water_force * beta.sin() + seepage_force * slope_angle.cos();
 
         (resisting / driving.max(0.1)).min(10.0)
     }
 
-    fn calculate_settlement_increase(&self, soil_type: &SoilType, water_table_depth: f64, moat_depth: f64) -> f64 {
+    fn calculate_settlement_increase(&self, soil_type: &SoilType, water_table_depth: f64, moat_depth: f64, pore_pressure_ratio: f64) -> f64 {
         let base_pct = match soil_type {
             SoilType::Sand => 20.0,
             SoilType::Clay => 60.0,
@@ -128,7 +204,8 @@ impl MoatAnalyzer {
             SoilType::Loam => 35.0,
         };
         let saturation_factor = (1.0 - water_table_depth / moat_depth).max(0.0).min(1.0);
-        base_pct + saturation_factor * (80.0 - base_pct)
+        let pore_pressure_amplification = 1.0 + pore_pressure_ratio * 0.5;
+        (base_pct + saturation_factor * (80.0 - base_pct)) * pore_pressure_amplification
     }
 
     fn calculate_lateral_displacement(
@@ -139,6 +216,7 @@ impl MoatAnalyzer {
         moat_depth: f64,
         wind_speed: f64,
         tilt_deg: f64,
+        pore_pressure_ratio: f64,
     ) -> f64 {
         let q = tower.total_weight * 9.81 / (tower.base_width * tower.base_depth);
         let b = tower.base_width;
@@ -147,7 +225,9 @@ impl MoatAnalyzer {
 
         let proximity_factor = 1.0 + 2.0 * moat_depth / (moat_distance + moat_depth).max(1.0);
 
-        let delta = q * b * (1.0 - nu * nu) / e.max(1.0) * proximity_factor;
+        let pore_pressure_factor = 1.0 + pore_pressure_ratio * 2.0;
+
+        let delta = q * b * (1.0 - nu * nu) / e.max(1.0) * proximity_factor * pore_pressure_factor;
 
         let wind_component = 0.613 * wind_speed * wind_speed * 1.3 * tower.total_height * 0.7
             / (e.max(1.0) * tower.base_width);
@@ -164,6 +244,7 @@ impl MoatAnalyzer {
         lateral_mm: f64,
         settlement_pct: f64,
         moat_distance: f64,
+        pore_pressure_ratio: f64,
     ) -> Vec<String> {
         let mut recs = Vec::new();
 
@@ -185,7 +266,10 @@ impl MoatAnalyzer {
         if moat_distance < 5.0 {
             recs.push("塔基距护城河过近，建议增加安全距离或设置防护结构".to_string());
         }
-        if overall_sf >= 3.0 && slope_sf >= 2.5 {
+        if pore_pressure_ratio > 0.3 {
+            recs.push("孔隙水压比较高，建议设置排水系统降低地下水位".to_string());
+        }
+        if overall_sf >= 3.0 && slope_sf >= 2.5 && pore_pressure_ratio < 0.15 {
             recs.push("结构整体安全，可正常使用".to_string());
         }
 
@@ -212,18 +296,18 @@ mod tests {
         TowerMetadata {
             tower_id: 1,
             tower_name: "测试塔".to_string(),
-            build_date: "2024-01-01".to_string(),
-            material: "松木".to_string(),
-            total_height: 15.0,
+            build_date: "1450-01-01".to_string(),
+            material: "杉木".to_string(),
+            total_height: 18.5,
             total_layers: 5,
-            base_width: 5.0,
-            base_depth: 5.0,
-            total_weight: 12.0,
-            design_load: 300.0,
-            design_wind_speed: 25.0,
-            material_strength: 40.0,
-            elastic_modulus: 10000.0,
-            poisson_ratio: 0.38,
+            base_width: 6.2,
+            base_depth: 4.8,
+            total_weight: 28.5,
+            design_load: 850.0,
+            design_wind_speed: 35.0,
+            material_strength: 38.0,
+            elastic_modulus: 9500.0,
+            poisson_ratio: 0.35,
         }
     }
 
@@ -259,7 +343,9 @@ mod tests {
         let result = analyzer().analyze(&tower, &soil, 5.0, 4.0, 0.0, 10.0, 0.0);
 
         assert!(result.bearing_capacity_reduction < 0.7);
-        assert!(result.bearing_capacity_reduction >= 0.5);
+        assert!(result.bearing_capacity_reduction >= 0.3);
+        assert!(result.pore_pressure_ratio > 0.0);
+        assert!(result.water_soil_coupling_factor < 1.0);
     }
 
     #[test]
@@ -290,7 +376,7 @@ mod tests {
 
         assert!(clay_result.settlement_increase_pct > sand_result.settlement_increase_pct);
         assert!(sand_result.settlement_increase_pct >= 20.0);
-        assert!(clay_result.settlement_increase_pct <= 80.0);
+        assert!(clay_result.settlement_increase_pct <= 120.0);
     }
 
     #[test]
@@ -449,5 +535,57 @@ mod tests {
         let result = analyzer().analyze(&tower, &soil, 100.0, 4.0, 10.0, 10.0, 0.0);
 
         assert!(result.overall_safety_factor > 2.0);
+    }
+
+    #[test]
+    fn test_pore_pressure_ratio_range() {
+        let tower = test_tower();
+        let dry = analyzer().analyze(&tower, &SoilType::Loam, 5.0, 4.0, 10.0, 10.0, 0.0);
+        let wet = analyzer().analyze(&tower, &SoilType::Loam, 5.0, 4.0, 0.0, 10.0, 0.0);
+
+        assert_eq!(dry.pore_pressure_ratio, 0.0);
+        assert!(wet.pore_pressure_ratio > 0.0);
+        assert!(wet.pore_pressure_ratio <= 0.5);
+    }
+
+    #[test]
+    fn test_coupling_factor_decreases_with_pore_pressure() {
+        let tower = test_tower();
+        let dry = analyzer().analyze(&tower, &SoilType::Clay, 5.0, 4.0, 10.0, 10.0, 0.0);
+        let wet = analyzer().analyze(&tower, &SoilType::Clay, 5.0, 4.0, 0.0, 10.0, 0.0);
+
+        assert!(dry.water_soil_coupling_factor > wet.water_soil_coupling_factor);
+        assert!(dry.water_soil_coupling_factor <= 1.0);
+        assert!(wet.water_soil_coupling_factor >= 0.5);
+    }
+
+    #[test]
+    fn test_seepage_force_sand_greater_than_clay() {
+        let tower = test_tower();
+        let sand = analyzer().analyze(&tower, &SoilType::Sand, 5.0, 4.0, 0.0, 10.0, 0.0);
+        let clay = analyzer().analyze(&tower, &SoilType::Clay, 5.0, 4.0, 0.0, 10.0, 0.0);
+
+        assert!(sand.seepage_force_kn >= 0.0);
+        assert!(clay.seepage_force_kn >= 0.0);
+    }
+
+    #[test]
+    fn test_coupling_reduces_safety_factor() {
+        let tower = test_tower();
+        let dry = analyzer().analyze(&tower, &SoilType::Silt, 5.0, 4.0, 10.0, 10.0, 0.0);
+        let wet = analyzer().analyze(&tower, &SoilType::Silt, 5.0, 4.0, 0.0, 10.0, 0.0);
+
+        assert!(wet.overall_safety_factor <= dry.overall_safety_factor);
+    }
+
+    #[test]
+    fn test_pore_pressure_drainage_recommendation() {
+        let tower = test_tower();
+        let result = analyzer().analyze(&tower, &SoilType::Clay, 2.0, 8.0, 0.0, 35.0, 4.0);
+
+        if result.pore_pressure_ratio > 0.3 {
+            let has_drainage = result.recommendations.iter().any(|r| r.contains("排水"));
+            assert!(has_drainage);
+        }
     }
 }

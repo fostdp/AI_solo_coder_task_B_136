@@ -483,6 +483,9 @@ pub struct MoatAnalysis {
     pub slope_stability_factor: f64,
     pub settlement_increase_pct: f64,
     pub lateral_displacement_mm: f64,
+    pub pore_pressure_ratio: f64,
+    pub seepage_force_kn: f64,
+    pub water_soil_coupling_factor: f64,
     pub overall_safety_factor: f64,
     pub risk_level: u8,
     pub recommendations: Vec<String>,
@@ -497,6 +500,10 @@ pub struct ClimbingViewpoint {
     pub description: String,
     pub visibility_range_m: f64,
     pub strategic_value: String,
+    pub height_above_ground_m: f64,
+    pub acrophobia_risk_level: u8,
+    pub recommended_fov_deg: f64,
+    pub transition_duration_ms: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

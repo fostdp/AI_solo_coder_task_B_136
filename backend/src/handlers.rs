@@ -493,9 +493,9 @@ pub struct MoatQuery {
 
 fn get_dynasty_for_tower(tower_id: u32) -> String {
     match tower_id {
-        1 | 2 => "明朝".to_string(),
-        3 => "明朝".to_string(),
-        4 => "战国".to_string(),
+        1 | 2 => "明朝(景泰)".to_string(),
+        3 => "明朝(洪武)".to_string(),
+        4 => "三国(魏)".to_string(),
         5 => "现代".to_string(),
         _ => "未知".to_string(),
     }
@@ -725,6 +725,38 @@ pub async fn climbing_viewpoints(
 
             let visibility = 100.0 + layer_y * 50.0;
 
+            let acrophobia_risk_level = if layer_y < 5.0 {
+                1
+            } else if layer_y < 10.0 {
+                2
+            } else if layer_y < 20.0 {
+                3
+            } else if layer_y < 35.0 {
+                4
+            } else {
+                5
+            };
+
+            let recommended_fov_deg = if acrophobia_risk_level <= 2 {
+                75.0
+            } else if acrophobia_risk_level == 3 {
+                65.0
+            } else if acrophobia_risk_level == 4 {
+                55.0
+            } else {
+                45.0
+            };
+
+            let transition_duration_ms = if acrophobia_risk_level <= 2 {
+                500
+            } else if acrophobia_risk_level == 3 {
+                1000
+            } else if acrophobia_risk_level == 4 {
+                1500
+            } else {
+                2000
+            };
+
             ClimbingViewpoint {
                 layer_id: layer,
                 layer_name: format!("L{}", layer),
@@ -733,6 +765,10 @@ pub async fn climbing_viewpoints(
                 description,
                 visibility_range_m: visibility,
                 strategic_value,
+                height_above_ground_m: layer_y,
+                acrophobia_risk_level,
+                recommended_fov_deg,
+                transition_duration_ms,
             }
         })
         .collect();

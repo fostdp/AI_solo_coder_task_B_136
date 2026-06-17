@@ -1,0 +1,43 @@
+﻿cargo :    Compiling futures-util v0.3.32
+所在位置 行:1 字符: 14
++ cd backend ; cargo build --message-format=short 2>&1 | Out-File -Enco ...
++              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   Compiling futures-util v0.3.32 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   Compiling futures-channel v0.3.32
+   Compiling hyper v1.10.1
+   Compiling tower v0.5.3
+   Compiling hyper-util v0.1.20
+   Compiling multer v3.1.0
+   Compiling tokio-tungstenite v0.24.0
+   Compiling axum-core v0.4.5
+   Compiling rumqttc v0.24.0
+   Compiling tower-http v0.6.11
+   Compiling hyper-tls v0.6.0
+   Compiling reqwest v0.12.28
+   Compiling axum v0.7.9
+   Compiling siege-tower-backend v1.0.0 (D:\SOLO-2\AI_solo_coder_task_A_136\bac
+kend)
+src\fem.rs:125:12: error[E0599]: no method named `scale_diagonal_mut` found for
+ struct `Matrix<f64, nalgebra::Const<6>, nalgebra::Const<6>, ArrayStorage<f64, 
+6, 6>>` in the current scope
+src\routes.rs:13:36: error[E0277]: the trait bound `fn(State<Arc<...>>, ...) ->
+ ... {receive_sensor_data}: Handler<_, _>` is not satisfied: the trait `Handler
+<_, _>` is not implemented for fn item `fn(State<Arc<AppState>>, Json<...>) -> 
+... {receive_sensor_data}`
+src\handlers.rs:21:5: warning: unused import: `tokio_stream::StreamExt`
+src\stability.rs:13:9: warning: unused variable: `tower`: help: if this is inte
+ntional, prefix it with an underscore: `_tower`
+src\stability.rs:27:9: warning: unused variable: `deflection`: help: if this is
+ intentional, prefix it with an underscore: `_deflection`
+src\ground.rs:151:9: warning: unused variable: `i_q`: help: if this is intentio
+nal, prefix it with an underscore: `_i_q`
+src\ground.rs:153:9: warning: unused variable: `i_gamma`: help: if this is inte
+ntional, prefix it with an underscore: `_i_gamma`
+src\handlers.rs:74:11: warning: unused variable: `state`: help: if this is inte
+ntional, prefix it with an underscore: `_state`
+warning: `siege-tower-backend` (lib) generated 6 warnings
+error: could not compile `siege-tower-backend` (lib) due to 2 previous errors; 
+6 warnings emitted

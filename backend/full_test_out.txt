@@ -1,0 +1,58 @@
+﻿=== Step 1: KILL existing processes ===
+
+=== Step 2: WAIT for cargo build to finish ===
+Build appears complete (no cargo/rustc running), iter=0
+
+=== Step 3: CHECK binary timestamp ===
+Binary exists: 2026/6/17 8:04:35
+Binary age: 1.35 minutes
+BINARY IS RECENT! (<10 min) - GOOD
+
+=== Step 4: START server ===
+Server launch command issued
+
+=== Step 5: WAIT for server ===
+Waiting... iter=0 status=FAIL
+Waiting... iter=1 status=FAIL
+Waiting... iter=2 status=FAIL
+Waiting... iter=3 status=FAIL
+Waiting... iter=4 status=FAIL
+Waiting... iter=5 status=FAIL
+Health OK after 12s: {"service":"siege-tower-backend","status":"ok","version":"2.0.0"}
+
+=== Step 6: RUN Full FEM Analysis TEST ===
+SUCCESS - HTTP 200 in 23131ms
+Total length: 10667
+
+=== Response (first 3000 chars) ===
+{"code":200,"message":"success","data":{"fem_sample":[{"displacement_total":0.0,"displacement_x":0.0,"displacement_y":0.0,"displacement_z":0.0,"layer_id":1,"node_id":0,"node_x":-3.1,"node_y":-2.4,"node_z":0.0,"plastic_strain":0.023949717720966893,"stress_xx":2.0,"stress_xy":0.3,"stress_yy":1.6,"stress_yz":0.2,"stress_zx":0.25,"stress_zz":90.0,"timestamp":"2026-06-17T00:06:51.367085600Z","tower_id":1,"von_mises":152.77372974435102},{"displacement_total":0.0,"displacement_x":0.0,"displacement_y":0.0,"displacement_z":0.0,"layer_id":1,"node_id":1,"node_x":-1.55,"node_y":-2.4,"node_z":0.0,"plastic_strain":0.023949717720966893,"stress_xx":2.0,"stress_xy":0.3,"stress_yy":1.6,"stress_yz":0.2,"stress_zx":0.25,"stress_zz":90.0,"timestamp":"2026-06-17T00:06:51.367085600Z","tower_id":1,"von_mises":152.77372974435102},{"displacement_total":0.0,"displacement_x":0.0,"displacement_y":0.0,"displacement_z":0.0,"layer_id":1,"node_id":2,"node_x":0.0,"node_y":-2.4,"node_z":0.0,"plastic_strain":0.023949717720966893,"stress_xx":2.0,"stress_xy":0.3,"stress_yy":1.6,"stress_yz":0.2,"stress_zx":0.25,"stress_zz":90.0,"timestamp":"2026-06-17T00:06:51.367085600Z","tower_id":1,"von_mises":152.77372974435102},{"displacement_total":0.0,"displacement_x":0.0,"displacement_y":0.0,"displacement_z":0.0,"layer_id":1,"node_id":3,"node_x":1.5500000000000003,"node_y":-2.4,"node_z":0.0,"plastic_strain":0.023949717720966893,"stress_xx":2.0,"stress_xy":0.3,"stress_yy":1.6,"stress_yz":0.2,"stress_zx":0.25,"stress_zz":90.0,"timestamp":"2026-06-17T00:06:51.367085600Z","tower_id":1,"von_mises":152.77372974435102},{"displacement_total":0.0,"displacement_x":0.0,"displacement_y":0.0,"displacement_z":0.0,"layer_id":1,"node_id":4,"node_x":3.1,"node_y":-2.4,"node_z":0.0,"plastic_strain":0.023949717720966893,"stress_xx":2.0,"stress_xy":0.3,"stress_yy":1.6,"stress_yz":0.2,"stress_zx":0.25,"stress_zz":90.0,"timestamp":"2026-06-17T00:06:51.367085600Z","tower_id":1,"von_mises":152.77372974435102},{"displacement_total":0.0,"displacement_x":0.0,"displacement_y":0.0,"displacement_z":0.0,"layer_id":1,"node_id":5,"node_x":-3.1,"node_y":-0.8,"node_z":0.0,"plastic_strain":0.023949717720966893,"stress_xx":2.0,"stress_xy":0.3,"stress_yy":1.6,"stress_yz":0.2,"stress_zx":0.25,"stress_zz":90.0,"timestamp":"2026-06-17T00:06:51.367085600Z","tower_id":1,"von_mises":152.77372974435102},{"displacement_total":0.0,"displacement_x":0.0,"displacement_y":0.0,"displacement_z":0.0,"layer_id":1,"node_id":6,"node_x":-1.55,"node_y":-0.8,"node_z":0.0,"plastic_strain":0.023949717720966893,"stress_xx":2.0,"stress_xy":0.3,"stress_yy":1.6,"stress_yz":0.2,"stress_zx":0.25,"stress_zz":90.0,"timestamp":"2026-06-17T00:06:51.367085600Z","tower_id":1,"von_mises":152.77372974435102},{"displacement_total":0.0,"displacement_x":0.0,"displacement_y":0.0,"displacement_z":0.0,"layer_id":1,"node_id":7,"node_x":0.0,"node_y":-0.8,"node_z":0.0,"plastic_strain":0.023949717720966893,"stress_xx":2.0,"stress_xy":0.3,"stress_yy":1.6,"stress_yz":0.2,"stress_z
+
+=== Step 7: POST-MORTEM log analysis ===
+NO PANIC DETECTED IN LOG - GOOD!
+
+=== Last 30 lines of log ===
+[2m2026-06-17T00:06:28.516896Z[0m [32m INFO[0m ThreadId(08) [2msiege_tower_backend::structural_simulator[0m[2m:[0m [缁撴瀯浠跨湡妯″潡] 涓诲惊鐜惎鍔紝绛夊緟鍛戒护...
+[2m2026-06-17T00:06:30.616116Z[0m [32m INFO[0m ThreadId(07) [2msiege_tower_backend::handlers[0m[2m:[0m [Handler] 瀹屾暣鍒嗘瀽璇锋眰: tower=1, wind=None, tilt=None
+[2m2026-06-17T00:06:30.616189Z[0m [32m INFO[0m ThreadId(07) [2msiege_tower_backend::handlers[0m[2m:[0m [Handler] 瑙ｆ瀽鍙傛暟瀹屾垚: wind_speed=15, tilt_deg=0.5
+[2m2026-06-17T00:06:30.616212Z[0m [32m INFO[0m ThreadId(07) [2msiege_tower_backend::handlers[0m[2m:[0m [Handler] 鍑嗗鍙戦€?SimCommand
+[2m2026-06-17T00:06:30.616228Z[0m [32m INFO[0m ThreadId(07) [2msiege_tower_backend::handlers[0m[2m:[0m [Handler] 鍙戦€佺粨鏋勪豢鐪熷懡浠?[2m2026-06-17T00:06:30.616258Z[0m [32m INFO[0m ThreadId(07) [2msiege_tower_backend::handlers[0m[2m:[0m [Handler] 缁撴瀯浠跨湡鍛戒护鍙戦€佹垚鍔?[2m2026-06-17T00:06:30.616264Z[0m [32m INFO[0m ThreadId(07) [2msiege_tower_backend::handlers[0m[2m:[0m [Handler] 鍙戦€佸湡澹ゅ垎鏋愬懡浠?All)
+[2m2026-06-17T00:06:30.616291Z[0m [32m INFO[0m ThreadId(07) [2msiege_tower_backend::handlers[0m[2m:[0m [Handler] 鍙戦€佸湡澹ゅ垎鏋愬懡浠?One)
+[2m2026-06-17T00:06:30.616306Z[0m [32m INFO[0m ThreadId(07) [2msiege_tower_backend::handlers[0m[2m:[0m [Handler] 鎵€鏈夊懡浠ゅ彂閫佹垚鍔燂紝绛夊緟鍝嶅簲...
+[2m2026-06-17T00:06:30.616339Z[0m [32m INFO[0m ThreadId(02) [2msiege_tower_backend::structural_simulator[0m[2m:[0m [缁撴瀯浠跨湡妯″潡] 鏀跺埌鍛戒护
+[2m2026-06-17T00:06:30.616365Z[0m [32m INFO[0m ThreadId(02) [2msiege_tower_backend::structural_simulator[0m[2m:[0m [缁撴瀯浠跨湡妯″潡] 鎵ц RunCustomAnalysis, tower=1, wind=15m/s
+[2m2026-06-17T00:06:30.616406Z[0m [32m INFO[0m ThreadId(02) [2msiege_tower_backend::structural_simulator[0m[2m:[0m [缁撴瀯浠跨湡] 寮€濮嬭嚜瀹氫箟鍒嗘瀽: tower=1, wind=15m/s, tilt=0.5掳
+[2m2026-06-17T00:06:30.616702Z[0m [32m INFO[0m ThreadId(02) [2msiege_tower_backend::structural_simulator[0m[2m:[0m [缁撴瀯浠跨湡] 姝ラ1: 绋冲畾鎬ф鏌?[2m2026-06-17T00:06:30.616731Z[0m [32m INFO[0m ThreadId(02) [2msiege_tower_backend::structural_simulator[0m[2m:[0m [缁撴瀯浠跨湡] 绋冲畾鎬ф鏌ュ畬鎴? 瀹夊叏绯绘暟=1.108
+[2m2026-06-17T00:06:30.616743Z[0m [32m INFO[0m ThreadId(02) [2msiege_tower_backend::structural_simulator[0m[2m:[0m [缁撴瀯浠跨湡] 姝ラ2: FEM鍒嗘瀽
+[2m2026-06-17T00:06:30.616756Z[0m [32m INFO[0m ThreadId(02) [2msiege_tower_backend::structural_simulator[0m[2m:[0m [FEM] 姝ラ2.1: 鏋勫缓濉斾綋缃戞牸
+[2m2026-06-17T00:06:30.616891Z[0m [32m INFO[0m ThreadId(02) [2msiege_tower_backend::structural_simulator[0m[2m:[0m [FEM] 姝ラ2.2: 缁勮鍒氬害鐭╅樀
+[2m2026-06-17T00:06:30.630222Z[0m [32m INFO[0m ThreadId(02) [2msiege_tower_backend::structural_simulator[0m[2m:[0m [FEM] 姝ラ2.3: 鏂藉姞鑽疯浇
+[2m2026-06-17T00:06:30.630309Z[0m [32m INFO[0m ThreadId(02) [2msiege_tower_backend::structural_simulator[0m[2m:[0m [FEM] 姝ラ2.4: 杈圭晫鏉′欢
+[2m2026-06-17T00:06:30.631016Z[0m [32m INFO[0m ThreadId(02) [2msiege_tower_backend::structural_simulator[0m[2m:[0m [FEM] 姝ラ2.5: 姹傝В
+[2m2026-06-17T00:06:30.961549Z[0m [32m INFO[0m ThreadId(02) [2msiege_tower_backend::structural_simulator[0m[2m:[0m [FEM] 姝ラ2.6: 浜岄樁鏁堝簲
+[2m2026-06-17T00:06:32.067835Z[0m [31mERROR[0m ThreadId(18) [2msiege_tower_backend::mqtt_client[0m[2m:[0m MQTT 閿欒: Io(Os { code: 10061, kind: ConnectionRefused, message: "鐢变簬鐩爣璁＄畻鏈虹Н鏋佹嫆缁濓紝鏃犳硶杩炴帴銆? })
+[2m2026-06-17T00:06:41.127490Z[0m [31mERROR[0m ThreadId(18) [2msiege_tower_backend::mqtt_client[0m[2m:[0m MQTT 閿欒: Io(Os { code: 10061, kind: ConnectionRefused, message: "鐢变簬鐩爣璁＄畻鏈虹Н鏋佹嫆缁濓紝鏃犳硶杩炴帴銆? })
+[2m2026-06-17T00:06:50.190386Z[0m [31mERROR[0m ThreadId(07) [2msiege_tower_backend::mqtt_client[0m[2m:[0m MQTT 閿欒: Io(Os { code: 10061, kind: ConnectionRefused, message: "鐢变簬鐩爣璁＄畻鏈虹Н鏋佹嫆缁濓紝鏃犳硶杩炴帴銆? })
+[2m2026-06-17T00:06:51.367026Z[0m [32m INFO[0m ThreadId(02) [2msiege_tower_backend::structural_simulator[0m[2m:[0m [FEM] 姝ラ2.7: 鎻愬彇缁撴灉
+[2m2026-06-17T00:06:51.367192Z[0m [32m INFO[0m ThreadId(02) [2msiege_tower_backend::structural_simulator[0m[2m:[0m [缁撴瀯浠跨湡] FEM瀹屾垚, 鑺傜偣鏁?120, 灞傛暟=5
+
+=== TEST DONE ===

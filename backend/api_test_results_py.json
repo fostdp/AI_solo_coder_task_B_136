@@ -1,0 +1,101 @@
+[
+  {
+    "name": "1.Health",
+    "method": "GET",
+    "path": "/api/health",
+    "status": 200,
+    "time_ms": 2065,
+    "result": "PASS",
+    "response": "{\"service\":\"siege-tower-backend\",\"status\":\"ok\",\"version\":\"2.0.0\"}"
+  },
+  {
+    "name": "2.ConfigTowers",
+    "method": "GET",
+    "path": "/api/config/towers",
+    "status": 404,
+    "time_ms": 2015,
+    "result": "FAIL",
+    "response": "HTTP Error 404: Not Found"
+  },
+  {
+    "name": "3.ConfigSoils",
+    "method": "GET",
+    "path": "/api/config/soils",
+    "status": 200,
+    "time_ms": 2021,
+    "result": "PASS",
+    "response": "{\"code\":200,\"message\":\"success\",\"data\":[{\"type\":\"sand\",\"name_cn\":\"砂土\",\"description\":\"颗粒均匀、透水性强、抗剪强度高但易液化\",\"bearing_capacity_ref_kpa\":180.0,\"friction_coefficient\":0.45,\"compressibility_index\":0.02,\"terzaghi_params\":{\"c_ref_kpa\":2.0,\"phi_ref_deg\":34.0,\"gamma_sat_knm3\":19.0,\"gamma_dry_knm3\":16.5,\"w_opt_pct\":10.0,\"w_sat_pct\":28.0,\"k_c\":0.015,\"k_phi\":0.01},\"settlement_params\":{\"initial_void_ratio\":0.55,\"compression_index\":0.08,\"recompression_index\":0.015,\"coefficient_of_consolidation_cm2s\":0.005,\"sec"
+  },
+  {
+    "name": "4.PostSensor",
+    "method": "POST",
+    "path": "/api/towers/1/sensor",
+    "status": 422,
+    "time_ms": 2024,
+    "result": "FAIL",
+    "response": "HTTP Error 422: Unprocessable Entity"
+  },
+  {
+    "name": "5.GetSensor",
+    "method": "GET",
+    "path": "/api/towers/1/sensor",
+    "status": 200,
+    "time_ms": 2033,
+    "result": "PASS",
+    "response": "{\"code\":200,\"message\":\"success\",\"data\":[],\"timestamp\":\"2026-06-17T00:14:10.021323700+00:00\"}"
+  },
+  {
+    "name": "6.PostAnalysis",
+    "method": "POST",
+    "path": "/api/towers/1/analysis",
+    "status": 200,
+    "time_ms": 4385,
+    "result": "PASS",
+    "response": "{\"code\":200,\"message\":\"success\",\"data\":{\"records\":5,\"status\":\"simulated\",\"tilt_deg\":2.0,\"timestamp\":\"2026-06-17T00:14:14.406702500+00:00\",\"tower_id\":1,\"wind_speed\":25.0},\"timestamp\":\"2026-06-17T00:14:14.406717800+00:00\"}"
+  },
+  {
+    "name": "7.GetAnalysis",
+    "method": "GET",
+    "path": "/api/towers/1/analysis",
+    "status": 404,
+    "time_ms": 2030,
+    "result": "FAIL",
+    "response": "HTTP Error 404: Not Found"
+  },
+  {
+    "name": "8.AnalysisStructure",
+    "method": "GET",
+    "path": "/api/towers/1/analysis/structure",
+    "status": 200,
+    "time_ms": 37989,
+    "result": "PASS",
+    "response": "{\"code\":200,\"message\":\"success\",\"data\":{\"analysis\":{\"critical_stress\":45.0,\"current_wind_factor\":20.47324821607675,\"damping_ratio\":0.03900000000000001,\"ground_capacity_ratio\":0.8,\"is_stable\":0,\"max_stress\":39.056549036428514,\"max_stress_layer\":5,\"max_tilt\":0.9,\"max_tilt_layer\":5,\"natural_frequency\":0.03449056859307769,\"safety_factor\":1.1198229043201768,\"second_order_effect\":1.0143425650215503,\"stability_margin\":-100.0,\"timestamp\":\"2026-06-17T00:14:33.936244500Z\",\"tower_id\":1,\"tower_name\":\"临冲吕公车-"
+  },
+  {
+    "name": "9.Ground",
+    "method": "GET",
+    "path": "/api/towers/1/ground",
+    "status": 200,
+    "time_ms": 6708,
+    "result": "PASS",
+    "response": "{\"code\":200,\"message\":\"success\",\"data\":[{\"timestamp\":\"2026-06-17T00:14:56.476840700Z\",\"tower_id\":1,\"soil_type\":\"rock\",\"bearing_capacity\":31823887.64035829,\"applied_pressure\":10.342583499355014,\"safety_factor\":10.0,\"settlement\":0.10174940773560218,\"differential_settlement\":12.53052482232068,\"passability_score\":100.0,\"can_pass\":1,\"risk_level\":1},{\"timestamp\":\"2026-06-17T00:14:56.476848200Z\",\"tower_id\":1,\"soil_type\":\"loam\",\"bearing_capacity\":16697.124196855028,\"applied_pressure\":10.342583499355014,"
+  },
+  {
+    "name": "10.Alerts",
+    "method": "GET",
+    "path": "/api/towers/1/alerts",
+    "status": 200,
+    "time_ms": 2040,
+    "result": "PASS",
+    "response": "{\"code\":200,\"message\":\"success\",\"data\":[],\"timestamp\":\"2026-06-17T00:15:03.178031900+00:00\"}"
+  },
+  {
+    "name": "11.FullAnalysis",
+    "method": "GET",
+    "path": "/api/towers/1/analysis/full",
+    "status": 200,
+    "time_ms": 73692,
+    "result": "PASS",
+    "response": "{\"code\":200,\"message\":\"success\",\"data\":{\"fem_sample\":[{\"displacement_total\":0.0,\"displacement_x\":0.0,\"displacement_y\":0.0,\"displacement_z\":0.0,\"layer_id\":1,\"node_id\":0,\"node_x\":-3.1,\"node_y\":-2.4,\"node_z\":0.0,\"plastic_strain\":0.023949717720966893,\"stress_xx\":2.0,\"stress_xy\":0.3,\"stress_yy\":1.6,\"stress_yz\":0.2,\"stress_zx\":0.25,\"stress_zz\":90.0,\"timestamp\":\"2026-06-17T00:15:51.887176300Z\",\"tower_id\":1,\"von_mises\":152.77372974435102},{\"displacement_total\":0.0,\"displacement_x\":0.0,\"displacement_y\":0"
+  }
+]
